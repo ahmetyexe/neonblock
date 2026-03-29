@@ -1,4 +1,4 @@
-# 🎮 Neon Tetris PWA
+# 🎮 Neon Block PWA
 
 Modern, neon-pastel temalı bir Tetris oyunu. Mobil cihazlar ve tabletler için optimize edilmiş Progressive Web App (PWA).
 
