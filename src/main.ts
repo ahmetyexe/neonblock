@@ -12,7 +12,8 @@ interface Particle {
   maxLife: number;
 }
 import { COLS, ROWS, COLORS, SHAPES } from './constants';
-// Ses efekti eklemek için kullanılan alan blok düşerken ve satır temizlenirken kullanılır.
+
+type GameMode = 'normal' | 'hard' | 'timed';
 
 class SoundManager {
   private ctx: AudioContext | null = null;
@@ -89,7 +90,6 @@ class SoundManager {
       this.bgmGain.gain.value = 0.08;
       this.bgmGain.connect(ctx.destination);
 
-      // Tetris-inspired melody notes (frequencies in Hz)
       const melody = [
         659.25, 493.88, 523.25, 587.33, 523.25, 493.88, 440.00,
         440.00, 523.25, 659.25, 587.33, 523.25, 493.88,
@@ -106,7 +106,7 @@ class SoundManager {
         if (this.bgmMuted || !this.bgmGain) return;
         const freq = melody[noteIndex % melody.length];
         noteIndex++;
-        if (freq === 0) return; // Rest note
+        if (freq === 0) return;
 
         try {
           const osc = ctx.createOscillator();
@@ -177,19 +177,25 @@ class Game {
   private clearTime = 0;
   private sound = new SoundManager();
 
+  // Game mode
+  private gameMode: GameMode = 'normal';
+  private timerRemaining = 120; // 2 minutes in seconds
+  private timerInterval: number | null = null;
+
   constructor() {
     this.canvas = document.getElementById('game-canvas') as HTMLCanvasElement;
     this.ctx = this.canvas.getContext('2d')!;
     this.grid = Array(ROWS).fill(null).map(() => Array(COLS).fill(null));
     this.nextPiece = this.getRandomType();
-    // Load best score from localStorage
+    // Load best score
     const saved = localStorage.getItem('tetris-best-score');
     this.bestScore = saved ? parseInt(saved, 10) : 0;
     this.init();
-    // Best skor özelliği local storage ile tutulup kullanıcıya sunuluyor
-    // Show best score on start screen
-    const startBest = document.getElementById('start-best-score');
-    if (startBest) startBest.textContent = this.bestScore.toLocaleString();
+    // Show best score on menu
+    const menuBest = document.getElementById('menu-best-score');
+    if (menuBest) menuBest.textContent = this.bestScore.toLocaleString();
+    const settingsBest = document.getElementById('settings-best');
+    if (settingsBest) settingsBest.textContent = this.bestScore.toLocaleString();
   }
 
   private init() {
@@ -197,41 +203,114 @@ class Game {
     this.resize();
     window.addEventListener('resize', () => this.resize());
 
-    document.getElementById('start-btn')?.addEventListener('click', () => this.start());
-    document.getElementById('restart-btn')?.addEventListener('click', () => this.start());
+    // Main menu mode buttons
+    document.getElementById('mode-normal')?.addEventListener('click', () => this.startGame('normal'));
+    document.getElementById('mode-hard')?.addEventListener('click', () => this.startGame('hard'));
+    document.getElementById('mode-timed')?.addEventListener('click', () => this.startGame('timed'));
+
+    // In-game buttons
+    document.getElementById('restart-btn')?.addEventListener('click', () => this.startGame(this.gameMode));
     document.getElementById('resume-btn')?.addEventListener('click', () => this.togglePause());
     document.getElementById('pause-toggle')?.addEventListener('click', () => this.togglePause());
 
-    // Audio toggle buttons
+    // Quit / menu buttons
+    document.getElementById('quit-btn')?.addEventListener('click', () => this.goToMenu());
+    document.getElementById('menu-btn')?.addEventListener('click', () => this.goToMenu());
+
+    // Settings
+    document.getElementById('settings-btn')?.addEventListener('click', () => {
+      document.getElementById('main-menu')?.classList.add('hidden');
+      document.getElementById('settings-panel')?.classList.remove('hidden');
+    });
+
+    document.getElementById('settings-back')?.addEventListener('click', () => {
+      document.getElementById('settings-panel')?.classList.add('hidden');
+      document.getElementById('main-menu')?.classList.remove('hidden');
+    });
+
+    // Audio toggles in pause overlay
     document.getElementById('sfx-toggle')?.addEventListener('click', () => {
       const muted = this.sound.toggleSFX();
-      const btn = document.getElementById('sfx-toggle')!;
-      btn.classList.toggle('muted', muted);
-      const icon = btn.querySelector('svg use');
-      if (icon) icon.setAttribute('href', muted ? '#icon-sound-off' : '#icon-sound-on');
+      this.updateAudioButton('sfx-toggle', muted, 'sound');
+      this.updateAudioButton('settings-sfx', muted, 'sound');
     });
 
     document.getElementById('bgm-toggle')?.addEventListener('click', () => {
       const muted = this.sound.toggleBGM();
-      const btn = document.getElementById('bgm-toggle')!;
-      btn.classList.toggle('muted', muted);
-      const icon = btn.querySelector('svg use');
-      if (icon) icon.setAttribute('href', muted ? '#icon-music-off' : '#icon-music-on');
+      this.updateAudioButton('bgm-toggle', muted, 'music');
+      this.updateAudioButton('settings-bgm', muted, 'music');
+    });
+
+    // Audio toggles in settings
+    document.getElementById('settings-sfx')?.addEventListener('click', () => {
+      const muted = this.sound.toggleSFX();
+      this.updateAudioButton('settings-sfx', muted, 'sound');
+      this.updateAudioButton('sfx-toggle', muted, 'sound');
+    });
+
+    document.getElementById('settings-bgm')?.addEventListener('click', () => {
+      const muted = this.sound.toggleBGM();
+      this.updateAudioButton('settings-bgm', muted, 'music');
+      this.updateAudioButton('bgm-toggle', muted, 'music');
     });
   }
 
-  private start() {
-    document.getElementById('start-screen')?.classList.add('hidden');
+  private updateAudioButton(id: string, muted: boolean, type: 'sound' | 'music') {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    btn.classList.toggle('muted', muted);
+    const icon = btn.querySelector('svg use');
+    if (icon) {
+      if (type === 'sound') {
+        icon.setAttribute('href', muted ? '#icon-sound-off' : '#icon-sound-on');
+      } else {
+        icon.setAttribute('href', muted ? '#icon-music-off' : '#icon-music-on');
+      }
+    }
+  }
+
+  private goToMenu() {
+    this.gameOver = true;
+    this.isPaused = false;
+    this.sound.stopBGM();
+    this.stopTimer();
+
+    document.getElementById('game-screen')?.classList.add('hidden');
+    document.getElementById('game-over-overlay')?.classList.remove('active');
+    document.getElementById('pause-overlay')?.classList.remove('active');
+    document.getElementById('main-menu')?.classList.remove('hidden');
+
+    // Update best score on menu
+    const menuBest = document.getElementById('menu-best-score');
+    if (menuBest) menuBest.textContent = this.bestScore.toLocaleString();
+    const settingsBest = document.getElementById('settings-best');
+    if (settingsBest) settingsBest.textContent = this.bestScore.toLocaleString();
+  }
+
+  private startGame(mode: GameMode) {
+    this.gameMode = mode;
+
+    // Hide menus, show game
+    document.getElementById('main-menu')?.classList.add('hidden');
+    document.getElementById('settings-panel')?.classList.add('hidden');
+    document.getElementById('game-screen')?.classList.remove('hidden');
     document.getElementById('game-over-overlay')?.classList.remove('active');
     document.getElementById('pause-overlay')?.classList.remove('active');
     const icon = document.querySelector('#pause-toggle svg use');
     if (icon) icon.setAttribute('href', '#icon-pause');
 
-    // Recalculate canvas size now that the game container is fully visible
+    // Show/hide timer stat
+    const timerStat = document.getElementById('timer-stat');
+    if (timerStat) {
+      timerStat.style.display = mode === 'timed' ? 'flex' : 'none';
+    }
+
+    // Recalculate canvas
     requestAnimationFrame(() => this.resize());
+
+    // Reset game state
     this.grid = Array(ROWS).fill(null).map(() => Array(COLS).fill(null));
     this.score = 0;
-    this.level = 1;
     this.lines = 0;
     this.gameOver = false;
     this.isPaused = false;
@@ -239,10 +318,65 @@ class Game {
     this.particles = [];
     this.shakeAmount = 0;
     this.clearTime = 0;
+
+    // Mode-specific setup
+    if (mode === 'hard') {
+      this.level = 5; // Start at level 5 for hard mode
+    } else {
+      this.level = 1;
+    }
+
+    if (mode === 'timed') {
+      this.timerRemaining = 120; // 2 minutes
+      this.updateTimerDisplay();
+      this.startTimer();
+    } else {
+      this.stopTimer();
+    }
+
     this.updateStats();
     this.spawnPiece();
     this.sound.startBGM();
     this.animate();
+  }
+
+  private startTimer() {
+    this.stopTimer();
+    this.timerInterval = window.setInterval(() => {
+      if (this.isPaused || this.gameOver) return;
+      this.timerRemaining--;
+      this.updateTimerDisplay();
+      if (this.timerRemaining <= 0) {
+        this.endGame();
+      }
+    }, 1000);
+  }
+
+  private stopTimer() {
+    if (this.timerInterval !== null) {
+      clearInterval(this.timerInterval);
+      this.timerInterval = null;
+    }
+  }
+
+  private updateTimerDisplay() {
+    const timerEl = document.getElementById('timer-val');
+    if (!timerEl) return;
+    const minutes = Math.floor(this.timerRemaining / 60);
+    const seconds = this.timerRemaining % 60;
+    timerEl.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+    // Make timer red when low
+    if (this.timerRemaining <= 10) {
+      timerEl.style.color = 'var(--color-z)';
+      timerEl.style.animation = 'pulse-timer 0.5s ease-in-out infinite';
+    } else if (this.timerRemaining <= 30) {
+      timerEl.style.color = 'var(--color-l)';
+      timerEl.style.animation = '';
+    } else {
+      timerEl.style.color = 'var(--color-z)';
+      timerEl.style.animation = '';
+    }
   }
 
   private togglePause() {
@@ -316,7 +450,6 @@ class Game {
     const shape = this.activePiece.shape;
     const newShape = shape[0].map((_, i) => shape.map(row => row[i]).reverse());
 
-    // Wall kick offsets to try (0, -1, 1, -2, 2)
     const offsets = [0, -1, 1, -2, 2];
 
     for (const offsetX of offsets) {
@@ -329,7 +462,7 @@ class Game {
         this.activePiece.shape = newShape;
         this.activePiece.position = testPos;
         this.vibrate(10);
-        return; // Successful rotation
+        return;
       }
     }
   }
@@ -391,7 +524,6 @@ class Game {
       this.vibrate(50);
       this.sound.playLineClear(fullLines.length);
 
-      // Create particles for each block in clearing lines
       const blockSize = this.logicalWidth / COLS;
       fullLines.forEach(y => {
         for (let x = 0; x < COLS; x++) {
@@ -402,7 +534,6 @@ class Game {
         }
       });
 
-      // Clear lines and score
       setTimeout(() => {
         this.grid = this.grid.filter((_, y) => !fullLines.includes(y));
         while (this.grid.length < ROWS) this.grid.unshift(Array(COLS).fill(null));
@@ -416,7 +547,7 @@ class Game {
         this.activePiece = null;
         this.spawnPiece();
         this.updateStats();
-      }, 300); // Wait 300ms for explosion animation to play before hiding blocks
+      }, 300);
     } else {
       this.activePiece = null;
       this.spawnPiece();
@@ -428,7 +559,6 @@ class Game {
     const bs = size - p * 2;
     const padding = p;
 
-    // Create 8 particles per block
     for (let i = 0; i < 8; i++) {
       const angle = Math.random() * Math.PI * 2;
       const speed = 1 + Math.random() * 4;
@@ -438,7 +568,7 @@ class Game {
         x: x + padding + bs / 2,
         y: y + padding + bs / 2,
         vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed - 1, // Slight upward bias
+        vy: Math.sin(angle) * speed - 1,
         size: 2 + Math.random() * 4,
         color,
         life,
@@ -476,7 +606,7 @@ class Game {
   private updateStats() {
     document.getElementById('score-val')!.textContent = this.score.toLocaleString();
     document.getElementById('level-val')!.textContent = this.level.toString();
-    // Live-update best score during gameplay
+    // Live-update best score
     if (this.score > this.bestScore) {
       this.bestScore = this.score;
       localStorage.setItem('tetris-best-score', this.bestScore.toString());
@@ -510,7 +640,6 @@ class Game {
   private resize() {
     const dpr = window.devicePixelRatio || 1;
 
-    // Calculate available space from the canvas wrapper
     const wrapper = this.canvas.parentElement;
     let availableWidth: number;
     let availableHeight: number;
@@ -519,49 +648,46 @@ class Game {
       const wrapperStyle = getComputedStyle(wrapper);
       const wrapperPaddingH = parseFloat(wrapperStyle.paddingLeft) + parseFloat(wrapperStyle.paddingRight);
       const wrapperPaddingV = parseFloat(wrapperStyle.paddingTop) + parseFloat(wrapperStyle.paddingBottom);
-      const wrapperBorderH = parseFloat(wrapperStyle.borderLeftWidth) + parseFloat(wrapperStyle.borderRightWidth);
-      const wrapperBorderV = parseFloat(wrapperStyle.borderTopWidth) + parseFloat(wrapperStyle.borderBottomWidth);
       availableWidth = wrapper.clientWidth - wrapperPaddingH;
       availableHeight = wrapper.clientHeight - wrapperPaddingV;
     } else {
-      availableWidth = Math.min(window.innerWidth - 32, 400);
+      availableWidth = Math.min(window.innerWidth - 32, 460);
       availableHeight = window.innerHeight - 200;
     }
 
-    // Tetris board is 10 cols x 20 rows → aspect ratio 1:2 (width:height)
-    // Try width-first: fill available width, calculate height
     let width = Math.floor(availableWidth);
     let height = width * 2;
 
-    // If height exceeds available height, constrain by height instead
     if (height > availableHeight) {
       height = Math.floor(availableHeight);
       width = Math.floor(height / 2);
     }
 
-    // Cap maximum size for desktop
-    if (width > 400) {
-      width = 400;
-      height = 800;
+    if (width > 460) {
+      width = 460;
+      height = 920;
     }
 
-    // Ensure minimum size
     width = Math.max(width, 100);
     height = Math.max(height, 200);
 
-    // Store logical dimensions for drawing
     this.logicalWidth = width;
     this.logicalHeight = height;
 
-    // Set actual pixel dimensions (for rendering)
     this.canvas.width = width * dpr;
     this.canvas.height = height * dpr;
-    // Set display dimensions (CSS size)
     this.canvas.style.width = `${width}px`;
     this.canvas.style.height = `${height}px`;
-    // Reset and scale canvas coordinate system for device pixel ratio
     this.ctx.setTransform(1, 0, 0, 1, 0, 0);
     this.ctx.scale(dpr, dpr);
+  }
+
+  private getDropInterval(): number {
+    if (this.gameMode === 'hard') {
+      // Hard mode: much faster drop, starting effectively at level 5+ with faster curve
+      return Math.max(50, 600 - (this.level - 1) * 80);
+    }
+    return Math.max(100, 1000 - (this.level - 1) * 100);
   }
 
   private animate = (time = 0) => {
@@ -571,19 +697,18 @@ class Game {
     this.lastTime = time;
     this.dropCounter += deltaTime;
 
-    const dropInterval = Math.max(100, 1000 - (this.level - 1) * 100);
+    const dropInterval = this.getDropInterval();
     if (!this.clearingLines.length && this.dropCounter > dropInterval) this.drop();
 
     if (this.clearingLines.length) {
       this.clearTime += deltaTime;
     }
 
-    // Update particles if there's no pause
     for (let i = this.particles.length - 1; i >= 0; i--) {
       const p = this.particles[i];
       p.x += p.vx;
       p.y += p.vy;
-      p.vy += 0.2; // Gravity
+      p.vy += 0.2;
       p.life -= 1;
 
       if (p.life <= 0) {
@@ -591,7 +716,6 @@ class Game {
       }
     }
 
-    // Reduce shake
     if (this.shakeAmount > 0) {
       this.shakeAmount *= 0.8;
       if (this.shakeAmount < 0.5) this.shakeAmount = 0;
@@ -608,7 +732,6 @@ class Game {
 
     this.ctx.save();
 
-    // Apply screen shake
     if (this.shakeAmount > 0) {
       const dx = (Math.random() - 0.5) * this.shakeAmount;
       const dy = (Math.random() - 0.5) * this.shakeAmount;
@@ -632,14 +755,13 @@ class Game {
       this.ctx.lineTo(width, y * blockSize);
       this.ctx.stroke();
     }
-    // Bu alan 
+
     // Locked
     this.grid.forEach((row, y) => {
       const isClearing = this.clearingLines.includes(y);
       row.forEach((type, x) => {
         if (type) {
           if (isClearing) {
-            // Draw clearing animation: flash white then fade out
             const progress = Math.min(1, this.clearTime / 300);
             if (progress < 1) {
               this.ctx.globalAlpha = 1 - progress;
@@ -682,7 +804,6 @@ class Game {
       this.ctx.globalAlpha = p.life / p.maxLife;
       this.ctx.fill();
 
-      // Add glow to particle
       this.ctx.shadowBlur = 10;
       this.ctx.shadowColor = p.color;
       this.ctx.fill();
@@ -725,6 +846,7 @@ class Game {
   private endGame() {
     this.gameOver = true;
     this.sound.stopBGM();
+    this.stopTimer();
     // Check and update best score
     if (this.score > this.bestScore) {
       this.bestScore = this.score;
@@ -733,9 +855,11 @@ class Game {
     document.getElementById('game-over-overlay')?.classList.add('active');
     document.getElementById('final-score')!.textContent = this.score.toLocaleString();
     document.getElementById('best-score')!.textContent = this.bestScore.toLocaleString();
-    // Update start screen best score for next visit
-    const startBest = document.getElementById('start-best-score');
-    if (startBest) startBest.textContent = this.bestScore.toLocaleString();
+    // Update menu best score
+    const menuBest = document.getElementById('menu-best-score');
+    if (menuBest) menuBest.textContent = this.bestScore.toLocaleString();
+    const settingsBest = document.getElementById('settings-best');
+    if (settingsBest) settingsBest.textContent = this.bestScore.toLocaleString();
   }
 
   private setupControls() {
