@@ -12,6 +12,7 @@ export const COLORS: Record<TetrominoType, string> = {
   S: '#00ff84',
   T: '#cc00ff',
   Z: '#ff0060',
+  BOMB: '#ff4400',
 };
 
 export const SHAPES: Record<TetrominoType, number[][]> = {
@@ -22,4 +23,5 @@ export const SHAPES: Record<TetrominoType, number[][]> = {
   S: [[0, 1, 1], [1, 1, 0], [0, 0, 0]],
   T: [[0, 1, 0], [1, 1, 1], [0, 0, 0]],
   Z: [[1, 1, 0], [0, 1, 1], [0, 0, 0]],
+  BOMB: [[1]],
 };

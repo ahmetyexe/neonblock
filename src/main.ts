@@ -70,6 +70,35 @@ class SoundManager {
     } catch { /* ignore */ }
   }
 
+  playBombExplosion() {
+    if (this.sfxMuted) return;
+    try {
+      const ctx = this.getCtx();
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(80, ctx.currentTime);
+      osc1.frequency.exponentialRampToValueAtTime(25, ctx.currentTime + 0.6);
+      gain1.gain.setValueAtTime(0.5, ctx.currentTime);
+      gain1.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.6);
+      osc1.start(ctx.currentTime);
+      osc1.stop(ctx.currentTime + 0.6);
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.type = 'sawtooth';
+      osc2.frequency.setValueAtTime(600, ctx.currentTime);
+      osc2.frequency.exponentialRampToValueAtTime(80, ctx.currentTime + 0.4);
+      gain2.gain.setValueAtTime(0.15, ctx.currentTime);
+      gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+      osc2.start(ctx.currentTime);
+      osc2.stop(ctx.currentTime + 0.4);
+    } catch { /* ignore */ }
+  }
+
   startBGM() {
     if (this.bgmPlaying) return;
     this.bgmPlaying = true;
@@ -397,6 +426,8 @@ class Game {
   }
 
   private getRandomType(): TetrominoType {
+    // ~4% chance for bomb (rare)
+    if (Math.random() < 0.04) return 'BOMB';
     const types: TetrominoType[] = ['I', 'J', 'L', 'O', 'S', 'T', 'Z'];
     return types[Math.floor(Math.random() * types.length)];
   }
@@ -445,7 +476,7 @@ class Game {
   }
 
   private rotate() {
-    if (!this.activePiece || this.isPaused || this.gameOver) return;
+    if (!this.activePiece || this.isPaused || this.gameOver || this.clearingLines.length) return;
 
     const shape = this.activePiece.shape;
     const newShape = shape[0].map((_, i) => shape.map(row => row[i]).reverse());
@@ -468,7 +499,7 @@ class Game {
   }
 
   private move(dir: number) {
-    if (!this.activePiece || this.isPaused || this.gameOver) return;
+    if (!this.activePiece || this.isPaused || this.gameOver || this.clearingLines.length) return;
     this.vibrate(5);
     const newPos = { ...this.activePiece.position, x: this.activePiece.position.x + dir };
     if (!this.checkCollision(newPos, this.activePiece.shape)) {
@@ -477,7 +508,7 @@ class Game {
   }
 
   private drop() {
-    if (!this.activePiece || this.isPaused || this.gameOver) return;
+    if (!this.activePiece || this.isPaused || this.gameOver || this.clearingLines.length) return;
     const newPos = { ...this.activePiece.position, y: this.activePiece.position.y + 1 };
     if (!this.checkCollision(newPos, this.activePiece.shape)) {
       this.activePiece.position = newPos;
@@ -488,7 +519,7 @@ class Game {
   }
 
   private hardDrop() {
-    if (!this.activePiece || this.isPaused || this.gameOver) return;
+    if (!this.activePiece || this.isPaused || this.gameOver || this.clearingLines.length) return;
     this.vibrate(20);
     let newY = this.activePiece.position.y;
     while (!this.checkCollision({ ...this.activePiece.position, y: newY + 1 }, this.activePiece.shape)) {
@@ -501,6 +532,48 @@ class Game {
   private lockPiece() {
     if (!this.activePiece) return;
     this.sound.playDrop();
+
+    // Handle bomb explosion
+    if (this.activePiece.type === 'BOMB') {
+      const bombRow = this.activePiece.position.y;
+      const rowsToClear: number[] = [bombRow];
+      if (bombRow + 1 < ROWS) {
+        rowsToClear.push(bombRow + 1);
+      } else if (bombRow - 1 >= 0) {
+        rowsToClear.push(bombRow - 1);
+      }
+      const validRows = rowsToClear.filter(y => y >= 0 && y < ROWS);
+
+      this.clearingLines = validRows;
+      this.clearTime = 0;
+      this.shakeAmount = 16;
+      this.vibrate(100);
+      this.sound.playBombExplosion();
+      this.activePiece = null;
+
+      const blockSize = this.logicalWidth / COLS;
+      validRows.forEach(y => {
+        for (let x = 0; x < COLS; x++) {
+          const type = this.grid[y][x];
+          const color = type ? COLORS[type] : COLORS['BOMB'];
+          this.createExplosion(x * blockSize, y * blockSize, blockSize, color);
+          this.createExplosion(x * blockSize, y * blockSize, blockSize, '#ffaa00');
+        }
+      });
+
+      setTimeout(() => {
+        this.grid = this.grid.filter((_, y) => !validRows.includes(y));
+        while (this.grid.length < ROWS) this.grid.unshift(Array(COLS).fill(null));
+        const points = 300 * this.level;
+        this.score += points;
+        this.lines += validRows.length;
+        if (Math.floor(this.lines / 10) >= this.level) this.level++;
+        this.clearingLines = [];
+        this.spawnPiece();
+        this.updateStats();
+      }, 400);
+      return;
+    }
 
     this.activePiece.shape.forEach((row, y) => {
       row.forEach((value, x) => {
@@ -534,6 +607,8 @@ class Game {
         }
       });
 
+      this.activePiece = null;
+
       setTimeout(() => {
         this.grid = this.grid.filter((_, y) => !fullLines.includes(y));
         while (this.grid.length < ROWS) this.grid.unshift(Array(COLS).fill(null));
@@ -544,7 +619,6 @@ class Game {
         if (Math.floor(this.lines / 10) >= this.level) this.level++;
 
         this.clearingLines = [];
-        this.activePiece = null;
         this.spawnPiece();
         this.updateStats();
       }, 300);
@@ -631,7 +705,11 @@ class Game {
     shape.forEach((row, y) => {
       row.forEach((value, x) => {
         if (value) {
-          this.drawBlock(ctx, offsetX + x * size, offsetY + y * size, size, color);
+          if (type === 'BOMB') {
+            this.drawBombBlock(ctx, offsetX + x * size, offsetY + y * size, size);
+          } else {
+            this.drawBlock(ctx, offsetX + x * size, offsetY + y * size, size, color);
+          }
         }
       });
     });
@@ -780,6 +858,7 @@ class Game {
 
     // Active
     if (this.activePiece && !this.clearingLines.length) {
+      const isBomb = this.activePiece.type === 'BOMB';
       // Ghost
       let ghostY = this.activePiece.position.y;
       while (!this.checkCollision({ ...this.activePiece.position, y: ghostY + 1 }, this.activePiece.shape)) ghostY++;
@@ -788,9 +867,17 @@ class Game {
         row.forEach((value, x) => {
           if (value) {
             this.ctx.globalAlpha = 0.15;
-            this.drawBlock(this.ctx, (this.activePiece!.position.x + x) * blockSize, (ghostY + y) * blockSize, blockSize, this.activePiece!.color);
+            if (isBomb) {
+              this.drawBombBlock(this.ctx, (this.activePiece!.position.x + x) * blockSize, (ghostY + y) * blockSize, blockSize);
+            } else {
+              this.drawBlock(this.ctx, (this.activePiece!.position.x + x) * blockSize, (ghostY + y) * blockSize, blockSize, this.activePiece!.color);
+            }
             this.ctx.globalAlpha = 1.0;
-            this.drawBlock(this.ctx, (this.activePiece!.position.x + x) * blockSize, (this.activePiece!.position.y + y) * blockSize, blockSize, this.activePiece!.color);
+            if (isBomb) {
+              this.drawBombBlock(this.ctx, (this.activePiece!.position.x + x) * blockSize, (this.activePiece!.position.y + y) * blockSize, blockSize);
+            } else {
+              this.drawBlock(this.ctx, (this.activePiece!.position.x + x) * blockSize, (this.activePiece!.position.y + y) * blockSize, blockSize, this.activePiece!.color);
+            }
           }
         });
       });
@@ -841,6 +928,69 @@ class Game {
     ctx.moveTo(bx + r, by + 1);
     ctx.lineTo(bx + bs - r, by + 1);
     ctx.stroke();
+  }
+
+  private drawBombBlock(ctx: CanvasRenderingContext2D, x: number, y: number, size: number) {
+    const cx = x + size / 2;
+    const cy = y + size / 2 + size * 0.05;
+    const radius = size * 0.35;
+    const pulse = 0.5 + 0.5 * Math.sin(Date.now() / 150);
+
+    // Outer glow
+    ctx.shadowBlur = 12 + pulse * 18;
+    ctx.shadowColor = `rgba(255, 80, 0, ${(0.6 + pulse * 0.4).toFixed(2)})`;
+
+    // Bomb body - dark sphere
+    const bodyGrad = ctx.createRadialGradient(cx - radius * 0.3, cy - radius * 0.3, 0, cx, cy, radius);
+    bodyGrad.addColorStop(0, '#666666');
+    bodyGrad.addColorStop(0.6, '#333333');
+    bodyGrad.addColorStop(1, '#111111');
+    ctx.fillStyle = bodyGrad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Shine highlight
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.18)';
+    ctx.beginPath();
+    ctx.ellipse(cx - radius * 0.2, cy - radius * 0.25, radius * 0.28, radius * 0.18, -0.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Fuse nozzle (small rectangle on top)
+    ctx.fillStyle = '#888';
+    const nw = size * 0.1;
+    const nh = size * 0.08;
+    ctx.fillRect(cx - nw / 2, cy - radius - nh, nw, nh);
+
+    // Fuse rope
+    ctx.strokeStyle = '#aa7733';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - radius - nh);
+    ctx.quadraticCurveTo(cx + size * 0.18, cy - radius - size * 0.18, cx + size * 0.12, cy - radius - size * 0.28);
+    ctx.stroke();
+
+    // Spark flame at fuse tip
+    const sparkX = cx + size * 0.12;
+    const sparkY = cy - radius - size * 0.28;
+    const sparkR = 2.5 + pulse * 2.5;
+
+    // Outer flame glow
+    const flameGrad = ctx.createRadialGradient(sparkX, sparkY, 0, sparkX, sparkY, sparkR * 2.5);
+    flameGrad.addColorStop(0, `rgba(255, 200, 50, ${(0.8 * pulse).toFixed(2)})`);
+    flameGrad.addColorStop(0.4, `rgba(255, 100, 0, ${(0.4 * pulse).toFixed(2)})`);
+    flameGrad.addColorStop(1, 'transparent');
+    ctx.fillStyle = flameGrad;
+    ctx.beginPath();
+    ctx.arc(sparkX, sparkY, sparkR * 2.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Inner spark core
+    ctx.fillStyle = `rgba(255, 255, 220, ${pulse.toFixed(2)})`;
+    ctx.beginPath();
+    ctx.arc(sparkX, sparkY, sparkR * 0.6, 0, Math.PI * 2);
+    ctx.fill();
   }
 
   private endGame() {
