@@ -1,0 +1,12 @@
+ÇEREZ POLİTİKASI
+
+Web sitelerimizde ve uygulamalarımızda deneyiminizi geliştirmek amacıyla çerezler (cookies) veya benzeri yerel teknolojiler kullanmaktayız.
+
+1. Ne Tür Çerezler / Veriler Kullanılıyor?
+- Zorunlu Depolama: Oyun en yüksek skorunuzu ve tercih ettiğiniz ayarları (ses açık/kapalı durumu vb.) saklamak için tarayıcının yerel deposunu (localStorage) kullanır.
+
+2. Çerezlerin Kullanım Amacı
+Deneyiminizi daha akıcı hale getirmek, ayarlarınızın hatırlanmasını sağlamak.
+
+3. Yönetim
+Tarayıcınızın veya telefonunuzun ayarlar kısmından bu verilerin temizlenmesini gerçekleştirebilirsiniz. Bu durumda "Neon Tetris" için kaydedilen ayar ve skorlarınız sıfırlanabilir.

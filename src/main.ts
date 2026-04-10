@@ -210,6 +210,7 @@ class Game {
   private gameMode: GameMode = 'normal';
   private timerRemaining = 120; // 2 minutes in seconds
   private timerInterval: number | null = null;
+  private hasUsedContinue = false;
 
   constructor() {
     this.canvas = document.getElementById('game-canvas') as HTMLCanvasElement;
@@ -246,6 +247,10 @@ class Game {
     document.getElementById('quit-btn')?.addEventListener('click', () => this.goToMenu());
     document.getElementById('menu-btn')?.addEventListener('click', () => this.goToMenu());
 
+    // Ad continue buttons
+    document.getElementById('ad-watch-btn')?.addEventListener('click', () => this.continueAfterAd());
+    document.getElementById('ad-skip-btn')?.addEventListener('click', () => this.skipAd());
+
     // Settings
     document.getElementById('settings-btn')?.addEventListener('click', () => {
       document.getElementById('main-menu')?.classList.add('hidden');
@@ -255,6 +260,14 @@ class Game {
     document.getElementById('settings-back')?.addEventListener('click', () => {
       document.getElementById('settings-panel')?.classList.add('hidden');
       document.getElementById('main-menu')?.classList.remove('hidden');
+    });
+
+    // Policies
+    document.getElementById('btn-policy-kullanim')?.addEventListener('click', () => this.showPolicy('Kullanım Politikası', '/belgeler/kullanım_polikası.txt'));
+    document.getElementById('btn-policy-gizlilik')?.addEventListener('click', () => this.showPolicy('Gizlilik Politikası', '/belgeler/gizlilik_polikası.txt'));
+    document.getElementById('btn-policy-cerez')?.addEventListener('click', () => this.showPolicy('Çerez Politikası', '/belgeler/çerez_polikası.txt'));
+    document.getElementById('policy-close-btn')?.addEventListener('click', () => {
+      document.getElementById('policy-overlay')?.classList.remove('active');
     });
 
     // Audio toggles in pause overlay
@@ -307,6 +320,7 @@ class Game {
     document.getElementById('game-screen')?.classList.add('hidden');
     document.getElementById('game-over-overlay')?.classList.remove('active');
     document.getElementById('pause-overlay')?.classList.remove('active');
+    document.getElementById('ad-continue-overlay')?.classList.remove('active');
     document.getElementById('main-menu')?.classList.remove('hidden');
 
     // Update best score on menu
@@ -344,6 +358,7 @@ class Game {
     this.gameOver = false;
     this.isPaused = false;
     this.holdPiece = null;
+    this.hasUsedContinue = false;
     this.particles = [];
     this.shakeAmount = 0;
     this.clearTime = 0;
@@ -1002,6 +1017,18 @@ class Game {
       this.bestScore = this.score;
       localStorage.setItem('tetris-best-score', this.bestScore.toString());
     }
+
+    // Show ad continue popup if not used yet
+    if (!this.hasUsedContinue) {
+      document.getElementById('ad-continue-overlay')?.classList.add('active');
+      return;
+    }
+
+    this.showGameOver();
+  }
+
+  private showGameOver() {
+    document.getElementById('ad-continue-overlay')?.classList.remove('active');
     document.getElementById('game-over-overlay')?.classList.add('active');
     document.getElementById('final-score')!.textContent = this.score.toLocaleString();
     document.getElementById('best-score')!.textContent = this.bestScore.toLocaleString();
@@ -1010,6 +1037,38 @@ class Game {
     if (menuBest) menuBest.textContent = this.bestScore.toLocaleString();
     const settingsBest = document.getElementById('settings-best');
     if (settingsBest) settingsBest.textContent = this.bestScore.toLocaleString();
+  }
+
+  private continueAfterAd() {
+    this.hasUsedContinue = true;
+    document.getElementById('ad-continue-overlay')?.classList.remove('active');
+
+    // TODO: Integrate actual ad API here
+    // For now, simulate ad watched and continue
+
+    // Clear top 4 rows to give player breathing room
+    for (let y = 0; y < Math.min(4, ROWS); y++) {
+      this.grid[y] = Array(COLS).fill(null);
+    }
+
+    // Resume the game
+    this.gameOver = false;
+    this.sound.startBGM();
+
+    // Restart timer for timed mode
+    if (this.gameMode === 'timed' && this.timerRemaining > 0) {
+      this.startTimer();
+    }
+
+    this.spawnPiece();
+    this.lastTime = performance.now();
+    this.dropCounter = 0;
+    this.animate();
+  }
+
+  private skipAd() {
+    this.hasUsedContinue = true;
+    this.showGameOver();
   }
 
   private setupControls() {
@@ -1032,6 +1091,127 @@ class Game {
         case 'p': case 'P': this.togglePause(); break;
       }
     });
+
+    // Swipe gesture controls for mobile
+    this.setupSwipeControls();
+  }
+
+  private setupSwipeControls() {
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchStartTime = 0;
+    let isSwiping = false;
+
+    const SWIPE_THRESHOLD = 30; // minimum px to count as a swipe
+    const TAP_THRESHOLD = 10; // below this is a tap, not a swipe
+
+    const gameScreen = document.getElementById('game-screen');
+    if (!gameScreen) return;
+
+    gameScreen.addEventListener('touchstart', (e: TouchEvent) => {
+      // Don't intercept touches on control buttons
+      const target = e.target as HTMLElement;
+      if (target.closest('.controls') || target.closest('.top-stats-bar') || target.closest('.overlay.active')) {
+        return;
+      }
+
+      const touch = e.touches[0];
+      touchStartX = touch.clientX;
+      touchStartY = touch.clientY;
+      touchStartTime = Date.now();
+      isSwiping = true;
+    }, { passive: true });
+
+    gameScreen.addEventListener('touchmove', (e: TouchEvent) => {
+      if (!isSwiping || this.isPaused || this.gameOver) return;
+
+      const target = e.target as HTMLElement;
+      if (target.closest('.controls') || target.closest('.top-stats-bar') || target.closest('.overlay.active')) {
+        return;
+      }
+
+      // Prevent page scroll during game swipes
+      e.preventDefault();
+    }, { passive: false });
+
+    gameScreen.addEventListener('touchend', (e: TouchEvent) => {
+      if (!isSwiping || this.isPaused || this.gameOver) return;
+
+      const target = e.target as HTMLElement;
+      if (target.closest('.controls') || target.closest('.top-stats-bar') || target.closest('.overlay.active')) {
+        isSwiping = false;
+        return;
+      }
+
+      const touch = e.changedTouches[0];
+      const deltaX = touch.clientX - touchStartX;
+      const deltaY = touch.clientY - touchStartY;
+      const absDeltaX = Math.abs(deltaX);
+      const absDeltaY = Math.abs(deltaY);
+      const elapsed = Date.now() - touchStartTime;
+
+      isSwiping = false;
+
+      // Ignore very small movements (taps)
+      if (absDeltaX < TAP_THRESHOLD && absDeltaY < TAP_THRESHOLD) {
+        return;
+      }
+
+      // Determine primary direction
+      if (absDeltaX > absDeltaY) {
+        // Horizontal swipe
+        if (absDeltaX >= SWIPE_THRESHOLD) {
+          if (deltaX < 0) {
+            // Swipe left
+            const steps = Math.min(Math.floor(absDeltaX / 40), 4);
+            for (let i = 0; i < Math.max(1, steps); i++) {
+              this.move(-1);
+            }
+          } else {
+            // Swipe right
+            const steps = Math.min(Math.floor(absDeltaX / 40), 4);
+            for (let i = 0; i < Math.max(1, steps); i++) {
+              this.move(1);
+            }
+          }
+        }
+      } else {
+        // Vertical swipe
+        if (absDeltaY >= SWIPE_THRESHOLD) {
+          if (deltaY > 0) {
+            // Swipe down
+            if (absDeltaY > 120 && elapsed < 300) {
+              // Fast long swipe = hard drop
+              this.hardDrop();
+            } else {
+              // Short/slow swipe down = soft drop
+              const steps = Math.min(Math.floor(absDeltaY / 30), 6);
+              for (let i = 0; i < Math.max(1, steps); i++) {
+                this.drop();
+              }
+            }
+          } else {
+            // Swipe up = rotate
+            this.rotate();
+          }
+        }
+      }
+    }, { passive: true });
+  }
+
+  private async showPolicy(title: string, url: string) {
+    document.getElementById('policy-overlay')?.classList.add('active');
+    document.getElementById('policy-title')!.textContent = title;
+    const contentEl = document.getElementById('policy-content')!;
+    contentEl.textContent = 'Yükleniyor...';
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Dosya bulunamadı.');
+      const text = await res.text();
+      contentEl.textContent = text || 'Bu belge henüz hazırlanmamıştır.';
+    } catch (e) {
+      contentEl.textContent = 'Belge yüklenirken bir hata oluştu.';
+    }
   }
 }
 

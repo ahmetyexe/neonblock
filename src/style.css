@@ -128,12 +128,12 @@ body {
 
 /* Title */
 .menu-title {
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
 }
 
 .title-line {
   display: block;
-  font-size: 4.5rem;
+  font-size: 5.5rem;
   font-weight: 900;
   letter-spacing: -2px;
   line-height: 0.95;
@@ -141,7 +141,7 @@ body {
 
 .menu-subtitle {
   color: rgba(255,255,255,0.4);
-  font-size: 0.9rem;
+  font-size: 1.1rem;
   letter-spacing: 0.15em;
   text-transform: uppercase;
   margin-bottom: 1.5rem;
@@ -149,25 +149,33 @@ body {
 
 .menu-best-score {
   margin-bottom: 2rem;
-  padding: 0.6rem 1.5rem;
+  padding: 0.8rem 2rem;
   text-align: center;
+}
+
+.menu-best-score .label {
+  font-size: 12px;
+}
+
+.menu-best-score .value {
+  font-size: 1.6rem !important;
 }
 
 /* Mode Buttons */
 .menu-buttons {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 1rem;
   width: 100%;
-  max-width: 320px;
+  max-width: 360px;
 }
 
 .mode-btn {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.85rem 1.2rem;
-  border-radius: 16px;
+  gap: 1rem;
+  padding: 1.1rem 1.5rem;
+  border-radius: 18px;
   cursor: pointer;
   transition: all 0.2s ease;
   text-align: left;
@@ -256,8 +264,8 @@ body {
 }
 
 .mode-icon {
-  width: 28px;
-  height: 28px;
+  width: 34px;
+  height: 34px;
   fill: none;
   stroke-width: 2;
   flex-shrink: 0;
@@ -266,17 +274,17 @@ body {
 .mode-text {
   display: flex;
   flex-direction: column;
-  gap: 0.1rem;
+  gap: 0.15rem;
 }
 
 .mode-title {
-  font-size: 1.1rem;
+  font-size: 1.35rem;
   font-weight: 700;
   letter-spacing: 0.04em;
 }
 
 .mode-desc {
-  font-size: 0.7rem;
+  font-size: 0.85rem;
   color: rgba(255,255,255,0.35);
   letter-spacing: 0.03em;
 }
@@ -503,6 +511,67 @@ canvas {
   background: rgba(255,255,255,0.08);
 }
 
+/* ==================== AD CONTINUE OVERLAY ==================== */
+.ad-continue-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1.5rem;
+}
+
+.ad-icon-circle {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: rgba(0, 255, 132, 0.08);
+  border: 2px solid rgba(0, 255, 132, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.25rem;
+  animation: ad-pulse 2s ease-in-out infinite;
+  box-shadow: 0 0 20px rgba(0, 255, 132, 0.15), inset 0 0 20px rgba(0, 255, 132, 0.05);
+}
+
+@keyframes ad-pulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(0, 255, 132, 0.15), inset 0 0 20px rgba(0, 255, 132, 0.05);
+    border-color: rgba(0, 255, 132, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(0, 255, 132, 0.3), inset 0 0 30px rgba(0, 255, 132, 0.1);
+    border-color: rgba(0, 255, 132, 0.6);
+  }
+}
+
+.ad-desc {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.5);
+  max-width: 220px;
+  line-height: 1.4;
+  margin-bottom: 0.75rem;
+}
+
+.ad-watch-btn {
+  background: rgba(0, 255, 132, 0.1) !important;
+  border-color: rgba(0, 255, 132, 0.5) !important;
+  color: var(--color-s) !important;
+  text-shadow: 0 0 10px var(--color-s) !important;
+  box-shadow: 0 0 15px rgba(0, 255, 132, 0.15) !important;
+  font-size: 1.1rem;
+  padding: 0.8rem 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ad-watch-btn:active {
+  background: rgba(0, 255, 132, 0.25) !important;
+  box-shadow: 0 0 25px rgba(0, 255, 132, 0.3) !important;
+  transform: scale(0.95);
+}
+
 /* ==================== CONTROLS ==================== */
 .controls {
   flex-shrink: 0;
@@ -654,11 +723,11 @@ canvas {
   }
 
   .title-line {
-    font-size: 3.5rem;
+    font-size: 4.5rem;
   }
 
   .menu-buttons {
-    max-width: 300px;
+    max-width: 340px;
   }
 }
 
@@ -749,40 +818,40 @@ canvas {
   }
 
   .title-line {
-    font-size: 3rem;
+    font-size: 4rem;
   }
 
   .menu-subtitle {
-    font-size: 0.75rem;
+    font-size: 1rem;
     margin-bottom: 1rem;
   }
 
   .menu-best-score {
     margin-bottom: 1.5rem;
-    padding: 0.5rem 1rem;
+    padding: 0.7rem 1.5rem;
   }
 
   .menu-buttons {
-    max-width: 280px;
-    gap: 0.6rem;
+    max-width: 320px;
+    gap: 0.8rem;
   }
 
   .mode-btn {
-    padding: 0.7rem 1rem;
-    border-radius: 14px;
+    padding: 1rem 1.2rem;
+    border-radius: 16px;
   }
 
   .mode-icon {
-    width: 24px;
-    height: 24px;
+    width: 30px;
+    height: 30px;
   }
 
   .mode-title {
-    font-size: 1rem;
+    font-size: 1.25rem;
   }
 
   .mode-desc {
-    font-size: 0.65rem;
+    font-size: 0.8rem;
   }
 
   .settings-icon-btn {
@@ -860,15 +929,23 @@ canvas {
   }
 
   .title-line {
-    font-size: 2.5rem;
+    font-size: 3.2rem;
   }
 
   .menu-buttons {
-    max-width: 260px;
-    gap: 0.5rem;
+    max-width: 290px;
+    gap: 0.6rem;
   }
 
   .mode-btn {
-    padding: 0.6rem 0.8rem;
+    padding: 0.8rem 1rem;
+  }
+
+  .mode-title {
+    font-size: 1.1rem;
+  }
+
+  .mode-desc {
+    font-size: 0.7rem;
   }
 }
