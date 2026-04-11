@@ -1,0 +1,15 @@
+GİZLİLİK POLİTİKASI
+
+Sizlerin gizliliği bizim için önemlidir. Karşılıklı güven çerçevesinde çalışıyoruz:
+
+1. Toplanan Veriler
+Oyunlarımız genellikle yerel depolama alanı kullanır (Örn: En yüksek skorunuz cihazınızda tutulur). Harici olarak kişisel bilgilerinizi rızanız olmadan doğrudan toplamayız. 
+
+2. Verilerin Kullanımı
+Eğer gelecekte skor tablosu (leaderboard) gibi sistemler gelirse ve bir üyelik yapısı gerekirse, bu veriler yalnızca oyun deneyiminizi geliştirmek için kullanılır.
+
+3. Üçüncü Taraf Entegrasyonları
+Oyun içindeki üçüncü taraf reklam sağlayıcıları anonim izleme teknolojileri kullanabilir. Bu hizmetler kendi gizlilik politikalarına tabi olacaktır. 
+
+4. İletişim
+Sorularınız ve talepleriniz için bizimle iletişime geçebilirsiniz.
