@@ -18,6 +18,14 @@
 </head>
 
 <body>
+  <!-- ==================== SPLASH / INTRO SCREEN ==================== -->
+  <div id="intro-screen" class="intro-screen active">
+    <div class="intro-content">
+      <img src="/tech-gelisim-logo.png" alt="Tech Gelişim" class="intro-logo" />
+      <div class="intro-text">SUNAR</div>
+    </div>
+  </div>
+
   <!-- SVG Sprite -->
   <svg style="display: none;">
     <symbol id="icon-left" viewBox="0 0 24 24">
@@ -86,7 +94,7 @@
   </svg>
 
   <!-- ==================== MAIN MENU ==================== -->
-  <div id="main-menu" class="menu-screen">
+  <div id="main-menu" class="menu-screen hidden">
     <button id="settings-btn" class="settings-icon-btn" title="Ayarlar">
       <svg>
         <use href="#icon-settings"></use>
@@ -208,6 +216,7 @@
 
     <!-- Game Canvas Area -->
     <div class="canvas-wrapper">
+      <div id="combo-text" class="combo-text hidden"></div>
       <canvas id="game-canvas"></canvas>
 
       <div id="pause-overlay" class="overlay">

@@ -211,6 +211,7 @@ class Game {
   private timerRemaining = 120; // 2 minutes in seconds
   private timerInterval: number | null = null;
   private hasUsedContinue = false;
+  private consecutiveClears = 0;
 
   constructor() {
     this.canvas = document.getElementById('game-canvas') as HTMLCanvasElement;
@@ -359,6 +360,7 @@ class Game {
     this.isPaused = false;
     this.holdPiece = null;
     this.hasUsedContinue = false;
+    this.consecutiveClears = 0;
     this.particles = [];
     this.shakeAmount = 0;
     this.clearTime = 0;
@@ -441,8 +443,8 @@ class Game {
   }
 
   private getRandomType(): TetrominoType {
-    // ~4% chance for bomb (rare)
-    if (Math.random() < 0.04) return 'BOMB';
+    // ~2% chance for bomb (rare)
+    if (Math.random() < 0.02) return 'BOMB';
     const types: TetrominoType[] = ['I', 'J', 'L', 'O', 'S', 'T', 'Z'];
     return types[Math.floor(Math.random() * types.length)];
   }
@@ -579,7 +581,20 @@ class Game {
       setTimeout(() => {
         this.grid = this.grid.filter((_, y) => !validRows.includes(y));
         while (this.grid.length < ROWS) this.grid.unshift(Array(COLS).fill(null));
-        const points = 300 * this.level;
+        
+        if (validRows.length > 0) {
+          this.consecutiveClears++;
+        } else {
+          this.consecutiveClears = 0;
+        }
+
+        let multiplier = this.consecutiveClears >= 2 ? this.consecutiveClears : 1;
+        if (multiplier >= 2) {
+          this.showComboAnimation(multiplier);
+          this.vibrate(100 * multiplier);
+        }
+
+        const points = 300 * this.level * multiplier;
         this.score += points;
         this.lines += validRows.length;
         if (Math.floor(this.lines / 10) >= this.level) this.level++;
@@ -606,10 +621,18 @@ class Game {
     });
 
     if (fullLines.length > 0) {
+      this.consecutiveClears++;
+      let multiplier = this.consecutiveClears >= 2 ? this.consecutiveClears : 1;
+
       this.clearingLines = fullLines;
       this.clearTime = 0;
-      this.shakeAmount = fullLines.length * 4;
-      this.vibrate(50);
+      this.shakeAmount = (fullLines.length * 4) + (multiplier > 1 ? multiplier * 2 : 0);
+      if (multiplier >= 2) {
+        this.showComboAnimation(multiplier);
+        this.vibrate(100 * multiplier);
+      } else {
+        this.vibrate(50);
+      }
       this.sound.playLineClear(fullLines.length);
 
       const blockSize = this.logicalWidth / COLS;
@@ -628,7 +651,8 @@ class Game {
         this.grid = this.grid.filter((_, y) => !fullLines.includes(y));
         while (this.grid.length < ROWS) this.grid.unshift(Array(COLS).fill(null));
 
-        const points = [0, 100, 300, 500, 800][fullLines.length] * this.level;
+        let multiplier = this.consecutiveClears >= 2 ? this.consecutiveClears : 1;
+        const points = [0, 100, 300, 500, 800][fullLines.length] * this.level * multiplier;
         this.score += points;
         this.lines += fullLines.length;
         if (Math.floor(this.lines / 10) >= this.level) this.level++;
@@ -638,6 +662,7 @@ class Game {
         this.updateStats();
       }, 300);
     } else {
+      this.consecutiveClears = 0;
       this.activePiece = null;
       this.spawnPiece();
     }
@@ -690,6 +715,26 @@ class Game {
 
   private vibrate(ms: number) {
     if (navigator.vibrate) navigator.vibrate(ms);
+  }
+
+  private showComboAnimation(multiplier: number) {
+    const comboEl = document.getElementById('combo-text');
+    if (!comboEl) return;
+    comboEl.textContent = `${multiplier}X KOMBO!`;
+    comboEl.classList.remove('hidden');
+    comboEl.style.animation = 'none';
+    
+    // Determine effect intensity
+    let effectName = 'pop-combo-2x';
+    if (multiplier === 3) effectName = 'pop-combo-3x';
+    if (multiplier >= 4) effectName = 'pop-combo-4x';
+    
+    void comboEl.offsetWidth; // trigger reflow
+    comboEl.style.animation = `${effectName} 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards`;
+    
+    setTimeout(() => {
+      comboEl.classList.add('hidden');
+    }, 800);
   }
 
   private updateStats() {
@@ -1216,6 +1261,16 @@ class Game {
 }
 
 new Game();
+
+window.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    document.getElementById('intro-screen')?.classList.remove('active');
+    setTimeout(() => {
+      document.getElementById('intro-screen')?.remove(); 
+      document.getElementById('main-menu')?.classList.remove('hidden');
+    }, 500); // Wait for fade out
+  }, 2000); // 2 seconds delay
+});
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
