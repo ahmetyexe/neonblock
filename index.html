@@ -22,7 +22,7 @@
   <!-- ==================== SPLASH / INTRO SCREEN ==================== -->
   <div id="intro-screen" class="intro-screen active">
     <div class="intro-content">
-      <img src="/tech-gelisim-logo.webp" alt="Tech Gelişim" class="intro-logo" />
+      <img src="/tech-gelisim-logo.webp" alt="Tech Gelişim" width="200" height="200" class="intro-logo" fetchpriority="high" />
       <div class="intro-text">SUNAR</div>
     </div>
   </div>
@@ -96,7 +96,7 @@
 
   <!-- ==================== MAIN MENU ==================== -->
   <div id="main-menu" class="menu-screen hidden">
-    <button id="settings-btn" class="settings-icon-btn" title="Ayarlar">
+    <button id="settings-btn" class="settings-icon-btn" title="Ayarlar" aria-label="Ayarlar">
       <svg>
         <use href="#icon-settings"></use>
       </svg>
@@ -147,7 +147,7 @@
   <!-- ==================== SETTINGS PANEL ==================== -->
   <div id="settings-panel" class="menu-screen hidden">
     <div class="settings-header">
-      <button id="settings-back" class="settings-back-btn">
+      <button id="settings-back" class="settings-back-btn" aria-label="Geri Dön">
         <svg>
           <use href="#icon-back"></use>
         </svg>
@@ -208,7 +208,7 @@
         <span class="label">Level</span>
         <span id="level-val" class="value" style="color: var(--color-t)">1</span>
       </div>
-      <button id="pause-toggle" class="glass-panel stat-item" style="cursor: pointer;">
+      <button id="pause-toggle" class="glass-panel stat-item" style="cursor: pointer;" aria-label="Oyunu Duraklat">
         <svg style="width: 22px; height: 22px; stroke: white; fill: none;">
           <use href="#icon-pause"></use>
         </svg>
@@ -276,21 +276,21 @@
 
     <!-- Controls -->
     <div class="controls">
-      <button id="btn-left" class="control-btn"><svg>
+      <button id="btn-left" class="control-btn" aria-label="Sola Git"><svg>
           <use href="#icon-left"></use>
         </svg></button>
-      <button id="btn-down" class="control-btn"><svg>
+      <button id="btn-down" class="control-btn" aria-label="Aşağı İn"><svg>
           <use href="#icon-down"></use>
         </svg></button>
-      <button id="btn-right" class="control-btn"><svg>
+      <button id="btn-right" class="control-btn" aria-label="Sağa Git"><svg>
           <use href="#icon-right"></use>
         </svg></button>
-      <button id="btn-hard-drop" class="control-btn"><svg>
+      <button id="btn-hard-drop" class="control-btn" aria-label="Hızlı Düşür"><svg>
           <use href="#icon-hard-drop"></use>
         </svg></button>
-      <button id="btn-hold" class="control-btn"><span
+      <button id="btn-hold" class="control-btn" aria-label="Parçayı Tut"><span
           style="font-size: 10px; font-weight: bold; color: var(--color-l)">HOLD</span></button>
-      <button id="btn-rotate" class="control-btn"><svg>
+      <button id="btn-rotate" class="control-btn" aria-label="Döndür"><svg>
           <use href="#icon-rotate"></use>
         </svg></button>
     </div>
