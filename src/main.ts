@@ -5,6 +5,17 @@ import { COLS, ROWS, COLORS, SHAPES } from './constants';
 
 type GameMode = 'normal' | 'hard' | 'timed';
 
+type LineClearParticle = {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
+  maxLife: number;
+  size: number;
+  color: string;
+};
+
 class SoundManager {
   private ctx: AudioContext | null = null;
   sfxMuted = false;
@@ -192,6 +203,9 @@ class Game {
 
   private clearTime = 0;
   private sound = new SoundManager();
+  private particles: LineClearParticle[] = [];
+  private fpsEstimate = 60;
+  private particleIntensity = this.getInitialParticleIntensity();
 
   // Game mode
   private gameMode: GameMode = 'normal';
@@ -599,6 +613,7 @@ class Game {
 
       this.clearingLines = fullLines;
       this.clearTime = 0;
+      this.spawnLineParticles(fullLines);
       if (multiplier >= 2) {
         this.showComboAnimation(multiplier);
       }
@@ -769,6 +784,11 @@ class Game {
     const deltaTime = time - this.lastTime;
     this.lastTime = time;
     this.dropCounter += deltaTime;
+    if (deltaTime > 0) {
+      const instantFps = 1000 / deltaTime;
+      this.fpsEstimate = this.fpsEstimate * 0.92 + instantFps * 0.08;
+      this.updateParticleIntensityByFps();
+    }
 
     const dropInterval = this.getDropInterval();
     if (!this.clearingLines.length && this.dropCounter > dropInterval) this.drop();
@@ -776,6 +796,7 @@ class Game {
     if (this.clearingLines.length) {
       this.clearTime += deltaTime;
     }
+    this.updateParticles(deltaTime);
 
     this.draw();
     requestAnimationFrame(this.animate);
@@ -843,7 +864,7 @@ class Game {
             if (isBomb) {
               this.drawBombBlock(this.ctx, (px + x) * blockSize, (ghostY + y) * blockSize, blockSize);
             } else {
-              this.drawBlock(this.ctx, (px + x) * blockSize, (ghostY + y) * blockSize, blockSize, this.activePiece!.color);
+              this.drawBlock(this.ctx, (px + x) * blockSize, (ghostY + y) * blockSize, blockSize, this.activePiece!.color, false);
             }
             // Active piece
             this.ctx.globalAlpha = 1.0;
@@ -857,28 +878,137 @@ class Game {
       }
       this.ctx.globalAlpha = 1.0;
     }
+
+    this.drawParticles();
   }
 
-  private drawBlock(ctx: CanvasRenderingContext2D, x: number, y: number, size: number, color: string) {
+  private drawBlock(ctx: CanvasRenderingContext2D, x: number, y: number, size: number, color: string, neon = true) {
     const p = 1;
     const bx = x + p;
     const by = y + p;
     const bs = size - p * 2;
     const r = 3;
 
-    // Fill block — no shadowBlur for performance
+    // Main fill
     ctx.fillStyle = color;
     ctx.beginPath();
     ctx.roundRect(bx, by, bs, bs, r);
     ctx.fill();
 
-    // Simple top highlight line instead of expensive radial gradient
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+    // Neon edge + light bloom (kept lightweight)
+    if (neon) {
+      const prevAlpha = ctx.globalAlpha;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.2;
+      ctx.globalAlpha = prevAlpha * 0.45;
+      ctx.strokeRect(bx + 0.6, by + 0.6, bs - 1.2, bs - 1.2);
+
+      ctx.lineWidth = 2.2;
+      ctx.globalAlpha = prevAlpha * 0.16;
+      ctx.strokeRect(bx + 0.3, by + 0.3, bs - 0.6, bs - 0.6);
+
+      // Small top bloom strip to emphasize neon depth without blur cost
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+      ctx.globalAlpha = prevAlpha * 0.15;
+      ctx.fillRect(bx + 1, by + 1, bs * 0.55, Math.max(1.2, bs * 0.18));
+      ctx.globalAlpha = prevAlpha;
+    }
+
+    // Top highlight
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(bx + r, by + 1);
     ctx.lineTo(bx + bs - r, by + 1);
     ctx.stroke();
+  }
+
+  private spawnLineParticles(lines: number[]) {
+    const blockSize = this.logicalWidth / COLS;
+    const particlesPerBlock = Math.max(3, Math.round(4 * this.particleIntensity));
+    const maxParticles = Math.round(240 * this.particleIntensity);
+
+    for (const y of lines) {
+      for (let x = 0; x < COLS; x++) {
+        const type = this.grid[y][x];
+        if (!type) continue;
+
+        const cx = x * blockSize + blockSize * 0.5;
+        const cy = y * blockSize + blockSize * 0.5;
+        const color = COLORS[type];
+
+        for (let i = 0; i < particlesPerBlock; i++) {
+          if (this.particles.length >= maxParticles) return;
+          const angle = Math.random() * Math.PI * 2;
+          const speed = (0.05 + Math.random() * 0.14) * this.particleIntensity;
+          const life = 260 + Math.random() * 220;
+
+          this.particles.push({
+            x: cx + (Math.random() - 0.5) * blockSize * 0.25,
+            y: cy + (Math.random() - 0.5) * blockSize * 0.25,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed - 0.05,
+            life,
+            maxLife: life,
+            size: Math.max(1.4, blockSize * (0.08 + Math.random() * 0.08)),
+            color
+          });
+        }
+      }
+    }
+  }
+
+  private updateParticles(deltaTime: number) {
+    if (this.particles.length === 0) return;
+    const gravity = 0.00025;
+
+    for (let i = this.particles.length - 1; i >= 0; i--) {
+      const p = this.particles[i];
+      p.life -= deltaTime;
+      if (p.life <= 0) {
+        this.particles.splice(i, 1);
+        continue;
+      }
+
+      p.vy += gravity * deltaTime;
+      p.x += p.vx * deltaTime;
+      p.y += p.vy * deltaTime;
+    }
+  }
+
+  private drawParticles() {
+    if (this.particles.length === 0) return;
+    for (const p of this.particles) {
+      const alpha = Math.max(0, p.life / p.maxLife);
+      this.ctx.globalAlpha = alpha * 0.9;
+      this.ctx.fillStyle = p.color;
+      this.ctx.beginPath();
+      this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      this.ctx.fill();
+    }
+    this.ctx.globalAlpha = 1;
+  }
+
+  private getInitialParticleIntensity() {
+    const nav = navigator as Navigator & { deviceMemory?: number };
+    const cores = navigator.hardwareConcurrency || 4;
+    const memory = nav.deviceMemory ?? 4;
+    const width = Math.max(window.innerWidth, window.innerHeight);
+    const screenFactor = width >= 1000 ? 1.2 : width >= 700 ? 1.05 : 1;
+    const cpuFactor = cores >= 8 ? 1.25 : cores >= 6 ? 1.1 : cores >= 4 ? 1 : 0.85;
+    const memFactor = memory >= 8 ? 1.2 : memory >= 6 ? 1.1 : memory >= 4 ? 1 : 0.85;
+    return Math.min(2.2, Math.max(0.9, screenFactor * cpuFactor * memFactor));
+  }
+
+  private updateParticleIntensityByFps() {
+    const minIntensity = 0.85;
+    const maxIntensity = 2.4;
+
+    if (this.fpsEstimate < 42) {
+      this.particleIntensity = Math.max(minIntensity, this.particleIntensity - 0.03);
+    } else if (this.fpsEstimate > 57) {
+      this.particleIntensity = Math.min(maxIntensity, this.particleIntensity + 0.02);
+    }
   }
 
   private drawBombBlock(ctx: CanvasRenderingContext2D, x: number, y: number, size: number) {
