@@ -142,6 +142,284 @@
         </div>
       </button>
     </div>
+
+    <button id="howto-btn" class="howto-menu-btn">
+      <svg class="mode-icon" style="width:22px; height:22px; stroke:rgba(255,255,255,0.6); fill:none; stroke-width:2;">
+        <use href="#icon-settings"></use>
+      </svg>
+      <span>Nasıl Oynanır?</span>
+    </button>
+  </div>
+
+  <!-- ==================== HOW TO PLAY PANEL ==================== -->
+  <div id="howto-panel" class="menu-screen hidden">
+    <div class="settings-header">
+      <button id="howto-back" class="settings-back-btn" aria-label="Geri Dön">
+        <svg>
+          <use href="#icon-back"></use>
+        </svg>
+      </button>
+      <h2 class="blue-glow">Nasıl Oynanır?</h2>
+    </div>
+    <div class="howto-content">
+      <!-- Step 1: Goal -->
+      <div class="howto-card">
+        <div class="howto-card-number">1</div>
+        <div class="howto-card-body">
+          <h3>Amaç</h3>
+          <div class="howto-visual howto-visual-goal">
+            <svg viewBox="0 0 200 120" class="howto-svg">
+              <!-- Mini grid -->
+              <rect x="40" y="10" width="120" height="100" rx="4" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+              <!-- Grid lines -->
+              <line x1="52" y1="10" x2="52" y2="110" stroke="rgba(255,255,255,0.05)" stroke-width="0.5"/>
+              <line x1="64" y1="10" x2="64" y2="110" stroke="rgba(255,255,255,0.05)" stroke-width="0.5"/>
+              <line x1="76" y1="10" x2="76" y2="110" stroke="rgba(255,255,255,0.05)" stroke-width="0.5"/>
+              <line x1="88" y1="10" x2="88" y2="110" stroke="rgba(255,255,255,0.05)" stroke-width="0.5"/>
+              <line x1="100" y1="10" x2="100" y2="110" stroke="rgba(255,255,255,0.05)" stroke-width="0.5"/>
+              <line x1="112" y1="10" x2="112" y2="110" stroke="rgba(255,255,255,0.05)" stroke-width="0.5"/>
+              <line x1="124" y1="10" x2="124" y2="110" stroke="rgba(255,255,255,0.05)" stroke-width="0.5"/>
+              <line x1="136" y1="10" x2="136" y2="110" stroke="rgba(255,255,255,0.05)" stroke-width="0.5"/>
+              <line x1="148" y1="10" x2="148" y2="110" stroke="rgba(255,255,255,0.05)" stroke-width="0.5"/>
+              <!-- Completed row (glowing) -->
+              <rect x="40" y="86" width="120" height="12" rx="1" fill="rgba(0,242,255,0.15)" class="howto-row-flash"/>
+              <rect x="40" y="86" width="12" height="12" rx="2" fill="#00f2ff" opacity="0.8"/>
+              <rect x="52" y="86" width="12" height="12" rx="2" fill="#cc00ff" opacity="0.8"/>
+              <rect x="64" y="86" width="12" height="12" rx="2" fill="#ff9d00" opacity="0.8"/>
+              <rect x="76" y="86" width="12" height="12" rx="2" fill="#00ff84" opacity="0.8"/>
+              <rect x="88" y="86" width="12" height="12" rx="2" fill="#0078ff" opacity="0.8"/>
+              <rect x="100" y="86" width="12" height="12" rx="2" fill="#ff0060" opacity="0.8"/>
+              <rect x="112" y="86" width="12" height="12" rx="2" fill="#fff600" opacity="0.8"/>
+              <rect x="124" y="86" width="12" height="12" rx="2" fill="#cc00ff" opacity="0.8"/>
+              <rect x="136" y="86" width="12" height="12" rx="2" fill="#00f2ff" opacity="0.8"/>
+              <rect x="148" y="86" width="12" height="12" rx="2" fill="#ff9d00" opacity="0.8"/>
+              <!-- Incomplete row -->
+              <rect x="40" y="98" width="12" height="12" rx="2" fill="#0078ff" opacity="0.8"/>
+              <rect x="52" y="98" width="12" height="12" rx="2" fill="#ff0060" opacity="0.8"/>
+              <rect x="76" y="98" width="12" height="12" rx="2" fill="#00ff84" opacity="0.8"/>
+              <rect x="100" y="98" width="12" height="12" rx="2" fill="#cc00ff" opacity="0.8"/>
+              <rect x="136" y="98" width="12" height="12" rx="2" fill="#fff600" opacity="0.8"/>
+              <!-- Falling T-piece -->
+              <g class="howto-piece-fall">
+                <rect x="88" y="30" width="12" height="12" rx="2" fill="#cc00ff" opacity="0.9"/>
+                <rect x="76" y="42" width="12" height="12" rx="2" fill="#cc00ff" opacity="0.9"/>
+                <rect x="88" y="42" width="12" height="12" rx="2" fill="#cc00ff" opacity="0.9"/>
+                <rect x="100" y="42" width="12" height="12" rx="2" fill="#cc00ff" opacity="0.9"/>
+              </g>
+              <!-- Score popup -->
+              <text x="100" y="75" text-anchor="middle" fill="var(--color-i)" font-size="10" font-weight="700" opacity="0.8" class="howto-score-pop">+100</text>
+            </svg>
+          </div>
+          <p>Blokları sıralayarak <strong style="color:var(--color-i)">yatay satır</strong> tamamla. Tamamlanan satırlar silinir ve <strong style="color:var(--color-s)">puan</strong> kazanırsın!</p>
+        </div>
+      </div>
+
+      <!-- Step 2: Touch Controls -->
+      <div class="howto-card">
+        <div class="howto-card-number">2</div>
+        <div class="howto-card-body">
+          <h3>Dokunmatik Kontroller</h3>
+          <div class="howto-visual">
+            <div class="howto-gesture-grid">
+              <div class="howto-gesture-item">
+                <div class="howto-gesture-icon">
+                  <svg viewBox="0 0 60 60" class="howto-gesture-svg">
+                    <circle cx="30" cy="35" r="10" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>
+                    <circle cx="30" cy="35" r="3" fill="rgba(255,255,255,0.5)"/>
+                    <path d="M15 35 L45 35" stroke="var(--color-i)" stroke-width="2" stroke-dasharray="3,3" class="howto-anim-lr"/>
+                    <polygon points="13,35 19,31 19,39" fill="var(--color-i)" class="howto-anim-lr"/>
+                    <polygon points="47,35 41,31 41,39" fill="var(--color-i)" class="howto-anim-lr"/>
+                  </svg>
+                </div>
+                <span class="howto-gesture-label">← → Sürükle</span>
+                <span class="howto-gesture-sublabel">Bloğu taşı</span>
+              </div>
+              <div class="howto-gesture-item">
+                <div class="howto-gesture-icon">
+                  <svg viewBox="0 0 60 60" class="howto-gesture-svg">
+                    <circle cx="30" cy="25" r="10" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>
+                    <circle cx="30" cy="25" r="3" fill="rgba(255,255,255,0.5)"/>
+                    <path d="M30 18 L30 50" stroke="var(--color-l)" stroke-width="2" stroke-dasharray="3,3" class="howto-anim-down"/>
+                    <polygon points="30,52 26,46 34,46" fill="var(--color-l)" class="howto-anim-down"/>
+                  </svg>
+                </div>
+                <span class="howto-gesture-label">↓ Sürükle</span>
+                <span class="howto-gesture-sublabel">Yumuşak düşür</span>
+              </div>
+              <div class="howto-gesture-item">
+                <div class="howto-gesture-icon">
+                  <svg viewBox="0 0 60 60" class="howto-gesture-svg">
+                    <circle cx="30" cy="38" r="10" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>
+                    <circle cx="30" cy="38" r="3" fill="rgba(255,255,255,0.5)"/>
+                    <path d="M30 35 L30 12" stroke="var(--color-s)" stroke-width="2" stroke-dasharray="3,3" class="howto-anim-up"/>
+                    <polygon points="30,8 26,14 34,14" fill="var(--color-s)" class="howto-anim-up"/>
+                  </svg>
+                </div>
+                <span class="howto-gesture-label">↑ Kaydır</span>
+                <span class="howto-gesture-sublabel">Döndür</span>
+              </div>
+              <div class="howto-gesture-item">
+                <div class="howto-gesture-icon">
+                  <svg viewBox="0 0 60 60" class="howto-gesture-svg">
+                    <circle cx="30" cy="18" r="8" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>
+                    <circle cx="30" cy="18" r="3" fill="rgba(255,255,255,0.5)"/>
+                    <path d="M30 18 L30 50" stroke="var(--color-z)" stroke-width="3" class="howto-anim-fast-down"/>
+                    <polygon points="30,54 24,46 36,46" fill="var(--color-z)" class="howto-anim-fast-down"/>
+                    <line x1="20" y1="54" x2="40" y2="54" stroke="var(--color-z)" stroke-width="2" opacity="0.6"/>
+                  </svg>
+                </div>
+                <span class="howto-gesture-label">↓ Hızlı Kaydır</span>
+                <span class="howto-gesture-sublabel">Anında düşür</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Button Controls -->
+      <div class="howto-card">
+        <div class="howto-card-number">3</div>
+        <div class="howto-card-body">
+          <h3>Kontrol Butonları</h3>
+          <div class="howto-visual">
+            <div class="howto-controls-showcase">
+              <div class="howto-controls-preview">
+                <div class="howto-dpad-demo">
+                  <div class="howto-demo-label">Sol Başparmak</div>
+                  <div class="howto-dpad-grid">
+                    <div class="howto-demo-btn howto-demo-btn-left"><svg viewBox="0 0 24 24" style="stroke:var(--color-i);fill:none;stroke-width:2.5"><use href="#icon-left"></use></svg></div>
+                    <div class="howto-demo-btn howto-demo-btn-down"><svg viewBox="0 0 24 24" style="stroke:var(--color-i);fill:none;stroke-width:2.5"><use href="#icon-down"></use></svg></div>
+                    <div class="howto-demo-btn howto-demo-btn-right"><svg viewBox="0 0 24 24" style="stroke:var(--color-i);fill:none;stroke-width:2.5"><use href="#icon-right"></use></svg></div>
+                  </div>
+                </div>
+                <div class="howto-action-demo">
+                  <div class="howto-demo-label">Sağ Başparmak</div>
+                  <div class="howto-action-grid">
+                    <div class="howto-demo-btn howto-demo-rotate"><svg viewBox="0 0 24 24" style="stroke:var(--color-t);fill:none;stroke-width:2.5"><use href="#icon-rotate"></use></svg></div>
+                    <div class="howto-demo-btn howto-demo-drop"><svg viewBox="0 0 24 24" style="stroke:var(--color-z);fill:none;stroke-width:2.5"><use href="#icon-hard-drop"></use></svg></div>
+                    <div class="howto-demo-btn howto-demo-hold"><span style="font-size:8px;font-weight:bold;color:var(--color-l)">HOLD</span></div>
+                  </div>
+                </div>
+              </div>
+              <div class="howto-controls-legend">
+                <span><strong style="color:var(--color-i)">Sol:</strong> Konumlandırma</span>
+                <span><strong style="color:var(--color-t)">Sağ:</strong> Döndür / Düşür / Tut</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 4: Next & Hold -->
+      <div class="howto-card">
+        <div class="howto-card-number">4</div>
+        <div class="howto-card-body">
+          <h3>Next & Hold</h3>
+          <div class="howto-visual">
+            <div class="howto-nh-demo">
+              <div class="howto-nh-box">
+                <span class="howto-nh-label">NEXT</span>
+                <svg viewBox="0 0 48 48" class="howto-nh-preview">
+                  <rect x="6" y="18" width="10" height="10" rx="2" fill="var(--color-i)" opacity="0.85"/>
+                  <rect x="16" y="18" width="10" height="10" rx="2" fill="var(--color-i)" opacity="0.85"/>
+                  <rect x="26" y="18" width="10" height="10" rx="2" fill="var(--color-i)" opacity="0.85"/>
+                  <rect x="36" y="18" width="10" height="10" rx="2" fill="var(--color-i)" opacity="0.85"/>
+                </svg>
+                <span class="howto-nh-desc">Sıradaki bloğu gör</span>
+              </div>
+              <div class="howto-nh-arrow">
+                <svg viewBox="0 0 24 24" style="width:20px;height:20px;stroke:rgba(255,255,255,0.3);fill:none;stroke-width:2">
+                  <path d="m9 18 6-6-6-6"/>
+                </svg>
+              </div>
+              <div class="howto-nh-box">
+                <span class="howto-nh-label" style="color:var(--color-l)">HOLD</span>
+                <svg viewBox="0 0 48 48" class="howto-nh-preview">
+                  <rect x="14" y="14" width="10" height="10" rx="2" fill="var(--color-l)" opacity="0.85"/>
+                  <rect x="24" y="14" width="10" height="10" rx="2" fill="var(--color-l)" opacity="0.85"/>
+                  <rect x="14" y="24" width="10" height="10" rx="2" fill="var(--color-l)" opacity="0.85"/>
+                </svg>
+                <span class="howto-nh-desc">Sonra kullan</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 5: Bomb -->
+      <div class="howto-card">
+        <div class="howto-card-number">5</div>
+        <div class="howto-card-body">
+          <h3>Bomba</h3>
+          <div class="howto-visual">
+            <svg viewBox="0 0 200 80" class="howto-svg">
+              <!-- Row 1 -->
+              <rect x="30" y="20" width="140" height="16" rx="2" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.08)" stroke-width="0.5"/>
+              <rect x="30" y="20" width="14" height="16" rx="2" fill="#0078ff" opacity="0.6"/>
+              <rect x="44" y="20" width="14" height="16" rx="2" fill="#ff9d00" opacity="0.6"/>
+              <rect x="72" y="20" width="14" height="16" rx="2" fill="#cc00ff" opacity="0.6"/>
+              <rect x="100" y="20" width="14" height="16" rx="2" fill="#00ff84" opacity="0.6"/>
+              <rect x="128" y="20" width="14" height="16" rx="2" fill="#ff0060" opacity="0.6"/>
+              <rect x="156" y="20" width="14" height="16" rx="2" fill="#00f2ff" opacity="0.6"/>
+              <!-- Bomb -->
+              <circle cx="100" cy="12" r="7" fill="#555" class="howto-bomb-pulse"/>
+              <circle cx="98" cy="10" r="2" fill="rgba(255,255,255,0.2)"/>
+              <line x1="100" y1="5" x2="103" y2="1" stroke="#aa7733" stroke-width="1.5"/>
+              <circle cx="103" cy="1" r="2" fill="#ffaa00" class="howto-spark"/>
+              <!-- Explosion lines -->
+              <line x1="20" y1="20" x2="20" y2="52" stroke="var(--color-z)" stroke-width="1" stroke-dasharray="2,2" opacity="0.5"/>
+              <line x1="180" y1="20" x2="180" y2="52" stroke="var(--color-z)" stroke-width="1" stroke-dasharray="2,2" opacity="0.5"/>
+              <!-- Row 2 -->
+              <rect x="30" y="36" width="140" height="16" rx="2" fill="rgba(255,0,96,0.08)" stroke="rgba(255,0,96,0.2)" stroke-width="0.5" class="howto-row-flash"/>
+              <rect x="30" y="36" width="14" height="16" rx="2" fill="#ff0060" opacity="0.5"/>
+              <rect x="44" y="36" width="14" height="16" rx="2" fill="#00f2ff" opacity="0.5"/>
+              <rect x="58" y="36" width="14" height="16" rx="2" fill="#ff9d00" opacity="0.5"/>
+              <rect x="72" y="36" width="14" height="16" rx="2" fill="#0078ff" opacity="0.5"/>
+              <rect x="86" y="36" width="14" height="16" rx="2" fill="#cc00ff" opacity="0.5"/>
+              <rect x="100" y="36" width="14" height="16" rx="2" fill="#00ff84" opacity="0.5"/>
+              <rect x="114" y="36" width="14" height="16" rx="2" fill="#fff600" opacity="0.5"/>
+              <rect x="128" y="36" width="14" height="16" rx="2" fill="#ff0060" opacity="0.5"/>
+              <rect x="142" y="36" width="14" height="16" rx="2" fill="#0078ff" opacity="0.5"/>
+              <rect x="156" y="36" width="14" height="16" rx="2" fill="#cc00ff" opacity="0.5"/>
+              <!-- Kaboom text -->
+              <text x="100" y="68" text-anchor="middle" fill="var(--color-z)" font-size="10" font-weight="900" class="howto-score-pop">BOOM! 💥</text>
+            </svg>
+          </div>
+          <p>Nadir gelen bomba, düştüğü <strong style="color:var(--color-z)">2 satırı</strong> temizler!</p>
+        </div>
+      </div>
+
+      <!-- Step 6: Game Modes -->
+      <div class="howto-card">
+        <div class="howto-card-number">6</div>
+        <div class="howto-card-body">
+          <h3>Oyun Modları</h3>
+          <div class="howto-modes-list">
+            <div class="howto-mode-item" style="--mode-color: var(--color-i)">
+              <svg viewBox="0 0 24 24" style="width:20px;height:20px;stroke:var(--color-i);fill:none;stroke-width:2"><use href="#icon-play"></use></svg>
+              <div class="howto-mode-info">
+                <span class="howto-mode-name" style="color:var(--color-i)">Normal</span>
+                <span class="howto-mode-desc">Klasik tetris. Seviye arttıkça hızlanır.</span>
+              </div>
+            </div>
+            <div class="howto-mode-item" style="--mode-color: var(--color-z)">
+              <svg viewBox="0 0 24 24" style="width:20px;height:20px;stroke:var(--color-z);fill:none;stroke-width:2"><use href="#icon-bolt"></use></svg>
+              <div class="howto-mode-info">
+                <span class="howto-mode-name" style="color:var(--color-z)">Hard</span>
+                <span class="howto-mode-desc">5. seviyeden başlar, çok daha hızlı!</span>
+              </div>
+            </div>
+            <div class="howto-mode-item" style="--mode-color: var(--color-t)">
+              <svg viewBox="0 0 24 24" style="width:20px;height:20px;stroke:var(--color-t);fill:none;stroke-width:2"><use href="#icon-timer"></use></svg>
+              <div class="howto-mode-info">
+                <span class="howto-mode-name" style="color:var(--color-t)">Zamanlı</span>
+                <span class="howto-mode-desc">2 dakikada en yüksek skoru topla!</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- ==================== SETTINGS PANEL ==================== -->
@@ -274,25 +552,38 @@
       </div>
     </div>
 
-    <!-- Controls -->
+    <!-- Controls - Gamepad Style -->
     <div class="controls">
-      <button id="btn-left" class="control-btn" aria-label="Sola Git"><svg>
-          <use href="#icon-left"></use>
-        </svg></button>
-      <button id="btn-down" class="control-btn" aria-label="Aşağı İn"><svg>
-          <use href="#icon-down"></use>
-        </svg></button>
-      <button id="btn-right" class="control-btn" aria-label="Sağa Git"><svg>
-          <use href="#icon-right"></use>
-        </svg></button>
-      <button id="btn-hard-drop" class="control-btn" aria-label="Hızlı Düşür"><svg>
-          <use href="#icon-hard-drop"></use>
-        </svg></button>
-      <button id="btn-hold" class="control-btn" aria-label="Parçayı Tut"><span
-          style="font-size: 10px; font-weight: bold; color: var(--color-l)">HOLD</span></button>
-      <button id="btn-rotate" class="control-btn" aria-label="Döndür"><svg>
-          <use href="#icon-rotate"></use>
-        </svg></button>
+      <!-- Left: D-Pad -->
+      <div class="controls-dpad">
+        <button id="btn-left" class="ctrl-btn ctrl-dpad" aria-label="Sola Git">
+          <svg viewBox="0 0 24 24"><use href="#icon-left"></use></svg>
+        </button>
+        <button id="btn-down" class="ctrl-btn ctrl-dpad ctrl-dpad-center" aria-label="Aşağı İn">
+          <svg viewBox="0 0 24 24"><use href="#icon-down"></use></svg>
+        </button>
+        <button id="btn-right" class="ctrl-btn ctrl-dpad" aria-label="Sağa Git">
+          <svg viewBox="0 0 24 24"><use href="#icon-right"></use></svg>
+        </button>
+      </div>
+      <!-- Right: Action Buttons -->
+      <div class="controls-actions">
+        <button id="btn-rotate" class="ctrl-btn ctrl-action ctrl-rotate" aria-label="Döndür">
+          <svg viewBox="0 0 24 24"><use href="#icon-rotate"></use></svg>
+          <span class="ctrl-label">DÖN</span>
+        </button>
+        <button id="btn-hard-drop" class="ctrl-btn ctrl-action ctrl-drop" aria-label="Hızlı Düşür">
+          <svg viewBox="0 0 24 24"><use href="#icon-hard-drop"></use></svg>
+          <span class="ctrl-label">DÜŞÜR</span>
+        </button>
+        <button id="btn-hold" class="ctrl-btn ctrl-action ctrl-hold" aria-label="Parçayı Tut">
+          <svg viewBox="0 0 24 24" style="stroke:currentColor;fill:none;stroke-width:2">
+            <rect x="4" y="4" width="16" height="16" rx="3"/>
+            <path d="M9 9h6v6H9z"/>
+          </svg>
+          <span class="ctrl-label">TUT</span>
+        </button>
+      </div>
     </div>
   </div>
 

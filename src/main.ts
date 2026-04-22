@@ -1,16 +1,6 @@
 import './style.css';
 import { TetrominoType, Grid, Tetromino, Position } from './types';
 
-interface Particle {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  size: number;
-  color: string;
-  life: number;
-  maxLife: number;
-}
 import { COLS, ROWS, COLORS, SHAPES } from './constants';
 
 type GameMode = 'normal' | 'hard' | 'timed';
@@ -197,12 +187,9 @@ class Game {
   private clearingLines: number[] = [];
   private lastTime = 0;
   private dropCounter = 0;
-  private isSpawning = false;
   private logicalWidth = 200;
   private logicalHeight = 400;
 
-  private particles: Particle[] = [];
-  private shakeAmount = 0;
   private clearTime = 0;
   private sound = new SoundManager();
 
@@ -260,6 +247,17 @@ class Game {
 
     document.getElementById('settings-back')?.addEventListener('click', () => {
       document.getElementById('settings-panel')?.classList.add('hidden');
+      document.getElementById('main-menu')?.classList.remove('hidden');
+    });
+
+    // How to play
+    document.getElementById('howto-btn')?.addEventListener('click', () => {
+      document.getElementById('main-menu')?.classList.add('hidden');
+      document.getElementById('howto-panel')?.classList.remove('hidden');
+    });
+
+    document.getElementById('howto-back')?.addEventListener('click', () => {
+      document.getElementById('howto-panel')?.classList.add('hidden');
       document.getElementById('main-menu')?.classList.remove('hidden');
     });
 
@@ -361,8 +359,6 @@ class Game {
     this.holdPiece = null;
     this.hasUsedContinue = false;
     this.consecutiveClears = 0;
-    this.particles = [];
-    this.shakeAmount = 0;
     this.clearTime = 0;
 
     // Mode-specific setup
@@ -468,12 +464,6 @@ class Game {
 
     this.activePiece = piece;
     this.canHold = true;
-    this.isSpawning = true;
-    this.canvas.parentElement?.classList.add('animate-spawn');
-    setTimeout(() => {
-      this.isSpawning = false;
-      this.canvas.parentElement?.classList.remove('animate-spawn');
-    }, 300);
     this.updateStats();
   }
 
@@ -509,7 +499,6 @@ class Game {
       if (!this.checkCollision(testPos, newShape)) {
         this.activePiece.shape = newShape;
         this.activePiece.position = testPos;
-        this.vibrate(10);
         return;
       }
     }
@@ -517,7 +506,6 @@ class Game {
 
   private move(dir: number) {
     if (!this.activePiece || this.isPaused || this.gameOver || this.clearingLines.length) return;
-    this.vibrate(5);
     const newPos = { ...this.activePiece.position, x: this.activePiece.position.x + dir };
     if (!this.checkCollision(newPos, this.activePiece.shape)) {
       this.activePiece.position = newPos;
@@ -537,7 +525,6 @@ class Game {
 
   private hardDrop() {
     if (!this.activePiece || this.isPaused || this.gameOver || this.clearingLines.length) return;
-    this.vibrate(20);
     let newY = this.activePiece.position.y;
     while (!this.checkCollision({ ...this.activePiece.position, y: newY + 1 }, this.activePiece.shape)) {
       newY++;
@@ -548,7 +535,6 @@ class Game {
 
   private lockPiece() {
     if (!this.activePiece) return;
-    this.sound.playDrop();
 
     // Handle bomb explosion
     if (this.activePiece.type === 'BOMB') {
@@ -563,20 +549,8 @@ class Game {
 
       this.clearingLines = validRows;
       this.clearTime = 0;
-      this.shakeAmount = 16;
-      this.vibrate(100);
       this.sound.playBombExplosion();
       this.activePiece = null;
-
-      const blockSize = this.logicalWidth / COLS;
-      validRows.forEach(y => {
-        for (let x = 0; x < COLS; x++) {
-          const type = this.grid[y][x];
-          const color = type ? COLORS[type] : COLORS['BOMB'];
-          this.createExplosion(x * blockSize, y * blockSize, blockSize, color);
-          this.createExplosion(x * blockSize, y * blockSize, blockSize, '#ffaa00');
-        }
-      });
 
       setTimeout(() => {
         this.grid = this.grid.filter((_, y) => !validRows.includes(y));
@@ -591,7 +565,6 @@ class Game {
         let multiplier = this.consecutiveClears >= 2 ? this.consecutiveClears : 1;
         if (multiplier >= 2) {
           this.showComboAnimation(multiplier);
-          this.vibrate(100 * multiplier);
         }
 
         const points = 300 * this.level * multiplier;
@@ -601,7 +574,7 @@ class Game {
         this.clearingLines = [];
         this.spawnPiece();
         this.updateStats();
-      }, 400);
+      }, 250);
       return;
     }
 
@@ -626,24 +599,10 @@ class Game {
 
       this.clearingLines = fullLines;
       this.clearTime = 0;
-      this.shakeAmount = (fullLines.length * 4) + (multiplier > 1 ? multiplier * 2 : 0);
       if (multiplier >= 2) {
         this.showComboAnimation(multiplier);
-        this.vibrate(100 * multiplier);
-      } else {
-        this.vibrate(50);
       }
       this.sound.playLineClear(fullLines.length);
-
-      const blockSize = this.logicalWidth / COLS;
-      fullLines.forEach(y => {
-        for (let x = 0; x < COLS; x++) {
-          const type = this.grid[y][x];
-          if (type) {
-            this.createExplosion(x * blockSize, y * blockSize, blockSize, COLORS[type]);
-          }
-        }
-      });
 
       this.activePiece = null;
 
@@ -660,7 +619,7 @@ class Game {
         this.clearingLines = [];
         this.spawnPiece();
         this.updateStats();
-      }, 300);
+      }, 200);
     } else {
       this.consecutiveClears = 0;
       this.activePiece = null;
@@ -668,32 +627,8 @@ class Game {
     }
   }
 
-  private createExplosion(x: number, y: number, size: number, color: string) {
-    const p = 1;
-    const bs = size - p * 2;
-    const padding = p;
-
-    for (let i = 0; i < 8; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const speed = 1 + Math.random() * 4;
-      const life = 20 + Math.random() * 20;
-
-      this.particles.push({
-        x: x + padding + bs / 2,
-        y: y + padding + bs / 2,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed - 1,
-        size: 2 + Math.random() * 4,
-        color,
-        life,
-        maxLife: life
-      });
-    }
-  }
-
   private hold() {
     if (!this.activePiece || !this.canHold || this.isPaused || this.gameOver) return;
-    this.vibrate(15);
     const currentType = this.activePiece.type;
     if (this.holdPiece === null) {
       this.holdPiece = currentType;
@@ -842,23 +777,6 @@ class Game {
       this.clearTime += deltaTime;
     }
 
-    for (let i = this.particles.length - 1; i >= 0; i--) {
-      const p = this.particles[i];
-      p.x += p.vx;
-      p.y += p.vy;
-      p.vy += 0.2;
-      p.life -= 1;
-
-      if (p.life <= 0) {
-        this.particles.splice(i, 1);
-      }
-    }
-
-    if (this.shakeAmount > 0) {
-      this.shakeAmount *= 0.8;
-      if (this.shakeAmount < 0.5) this.shakeAmount = 0;
-    }
-
     this.draw();
     requestAnimationFrame(this.animate);
   }
@@ -868,121 +786,94 @@ class Game {
     const height = this.logicalHeight;
     const blockSize = width / COLS;
 
-    this.ctx.save();
-
-    if (this.shakeAmount > 0) {
-      const dx = (Math.random() - 0.5) * this.shakeAmount;
-      const dy = (Math.random() - 0.5) * this.shakeAmount;
-      this.ctx.translate(dx, dy);
-    }
-
     this.ctx.clearRect(0, 0, width, height);
 
-    // Grid
+    // Grid lines - batch into single path for performance
     this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
     this.ctx.lineWidth = 0.5;
+    this.ctx.beginPath();
     for (let x = 0; x <= COLS; x++) {
-      this.ctx.beginPath();
       this.ctx.moveTo(x * blockSize, 0);
       this.ctx.lineTo(x * blockSize, height);
-      this.ctx.stroke();
     }
     for (let y = 0; y <= ROWS; y++) {
-      this.ctx.beginPath();
       this.ctx.moveTo(0, y * blockSize);
       this.ctx.lineTo(width, y * blockSize);
-      this.ctx.stroke();
     }
+    this.ctx.stroke();
 
-    // Locked
-    this.grid.forEach((row, y) => {
-      const isClearing = this.clearingLines.includes(y);
-      row.forEach((type, x) => {
+    // Locked blocks
+    const clearSet = this.clearingLines.length > 0 ? new Set(this.clearingLines) : null;
+    for (let y = 0; y < ROWS; y++) {
+      const row = this.grid[y];
+      const isClearing = clearSet?.has(y) ?? false;
+      for (let x = 0; x < COLS; x++) {
+        const type = row[x];
         if (type) {
           if (isClearing) {
-            const progress = Math.min(1, this.clearTime / 300);
+            const progress = Math.min(1, this.clearTime / 200);
             if (progress < 1) {
               this.ctx.globalAlpha = 1 - progress;
-              this.ctx.filter = `brightness(${1 + (1 - progress) * 2})`;
-              this.drawBlock(this.ctx, x * blockSize, y * blockSize, blockSize, COLORS[type], true);
-              this.ctx.filter = 'none';
+              this.drawBlock(this.ctx, x * blockSize, y * blockSize, blockSize, COLORS[type]);
+              this.ctx.globalAlpha = 1.0;
             }
           } else {
-            this.ctx.globalAlpha = 1.0;
-            this.drawBlock(this.ctx, x * blockSize, y * blockSize, blockSize, COLORS[type], false);
+            this.drawBlock(this.ctx, x * blockSize, y * blockSize, blockSize, COLORS[type]);
           }
         }
-      });
-    });
-    this.ctx.globalAlpha = 1.0;
+      }
+    }
 
-    // Active
+    // Active piece + ghost
     if (this.activePiece && !this.clearingLines.length) {
       const isBomb = this.activePiece.type === 'BOMB';
       // Ghost
       let ghostY = this.activePiece.position.y;
       while (!this.checkCollision({ ...this.activePiece.position, y: ghostY + 1 }, this.activePiece.shape)) ghostY++;
 
-      this.activePiece.shape.forEach((row, y) => {
-        row.forEach((value, x) => {
-          if (value) {
+      const shape = this.activePiece.shape;
+      const px = this.activePiece.position.x;
+      const py = this.activePiece.position.y;
+
+      for (let y = 0; y < shape.length; y++) {
+        for (let x = 0; x < shape[y].length; x++) {
+          if (shape[y][x]) {
+            // Ghost piece
             this.ctx.globalAlpha = 0.15;
             if (isBomb) {
-              this.drawBombBlock(this.ctx, (this.activePiece!.position.x + x) * blockSize, (ghostY + y) * blockSize, blockSize);
+              this.drawBombBlock(this.ctx, (px + x) * blockSize, (ghostY + y) * blockSize, blockSize);
             } else {
-              this.drawBlock(this.ctx, (this.activePiece!.position.x + x) * blockSize, (ghostY + y) * blockSize, blockSize, this.activePiece!.color);
+              this.drawBlock(this.ctx, (px + x) * blockSize, (ghostY + y) * blockSize, blockSize, this.activePiece!.color);
             }
+            // Active piece
             this.ctx.globalAlpha = 1.0;
             if (isBomb) {
-              this.drawBombBlock(this.ctx, (this.activePiece!.position.x + x) * blockSize, (this.activePiece!.position.y + y) * blockSize, blockSize);
+              this.drawBombBlock(this.ctx, (px + x) * blockSize, (py + y) * blockSize, blockSize);
             } else {
-              this.drawBlock(this.ctx, (this.activePiece!.position.x + x) * blockSize, (this.activePiece!.position.y + y) * blockSize, blockSize, this.activePiece!.color);
+              this.drawBlock(this.ctx, (px + x) * blockSize, (py + y) * blockSize, blockSize, this.activePiece!.color);
             }
           }
-        });
-      });
+        }
+      }
+      this.ctx.globalAlpha = 1.0;
     }
-
-    // Draw Particles
-    this.particles.forEach(p => {
-      this.ctx.beginPath();
-      this.ctx.arc(p.x, p.y, p.size * (p.life / p.maxLife), 0, Math.PI * 2);
-      this.ctx.fillStyle = p.color;
-      this.ctx.globalAlpha = p.life / p.maxLife;
-      this.ctx.fill();
-
-      this.ctx.shadowBlur = 10;
-      this.ctx.shadowColor = p.color;
-      this.ctx.fill();
-      this.ctx.shadowBlur = 0;
-    });
-    this.ctx.globalAlpha = 1.0;
-
-    this.ctx.restore();
   }
 
-  private drawBlock(ctx: CanvasRenderingContext2D, x: number, y: number, size: number, color: string, isExploding = false) {
+  private drawBlock(ctx: CanvasRenderingContext2D, x: number, y: number, size: number, color: string) {
     const p = 1;
     const bx = x + p;
     const by = y + p;
     const bs = size - p * 2;
-    const r = 4;
+    const r = 3;
 
+    // Fill block — no shadowBlur for performance
     ctx.fillStyle = color;
-    ctx.shadowBlur = isExploding ? 30 : 15;
-    ctx.shadowColor = color;
     ctx.beginPath();
     ctx.roundRect(bx, by, bs, bs, r);
     ctx.fill();
-    ctx.shadowBlur = 0;
 
-    const g = ctx.createRadialGradient(bx + bs / 2, by + bs / 2, 0, bx + bs / 2, by + bs / 2, bs / 2);
-    g.addColorStop(0, 'rgba(255, 255, 255, 0.3)');
-    g.addColorStop(1, 'transparent');
-    ctx.fillStyle = g;
-    ctx.fill();
-
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+    // Simple top highlight line instead of expensive radial gradient
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(bx + r, by + 1);
@@ -994,30 +885,20 @@ class Game {
     const cx = x + size / 2;
     const cy = y + size / 2 + size * 0.05;
     const radius = size * 0.35;
-    const pulse = 0.5 + 0.5 * Math.sin(Date.now() / 150);
 
-    // Outer glow
-    ctx.shadowBlur = 12 + pulse * 18;
-    ctx.shadowColor = `rgba(255, 80, 0, ${(0.6 + pulse * 0.4).toFixed(2)})`;
-
-    // Bomb body - dark sphere
-    const bodyGrad = ctx.createRadialGradient(cx - radius * 0.3, cy - radius * 0.3, 0, cx, cy, radius);
-    bodyGrad.addColorStop(0, '#666666');
-    bodyGrad.addColorStop(0.6, '#333333');
-    bodyGrad.addColorStop(1, '#111111');
-    ctx.fillStyle = bodyGrad;
+    // Bomb body - simple dark circle
+    ctx.fillStyle = '#333';
     ctx.beginPath();
     ctx.arc(cx, cy, radius, 0, Math.PI * 2);
     ctx.fill();
-    ctx.shadowBlur = 0;
 
     // Shine highlight
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.18)';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
     ctx.beginPath();
-    ctx.ellipse(cx - radius * 0.2, cy - radius * 0.25, radius * 0.28, radius * 0.18, -0.5, 0, Math.PI * 2);
+    ctx.arc(cx - radius * 0.2, cy - radius * 0.25, radius * 0.2, 0, Math.PI * 2);
     ctx.fill();
 
-    // Fuse nozzle (small rectangle on top)
+    // Fuse nozzle
     ctx.fillStyle = '#888';
     const nw = size * 0.1;
     const nh = size * 0.08;
@@ -1028,28 +909,13 @@ class Game {
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(cx, cy - radius - nh);
-    ctx.quadraticCurveTo(cx + size * 0.18, cy - radius - size * 0.18, cx + size * 0.12, cy - radius - size * 0.28);
+    ctx.lineTo(cx + size * 0.12, cy - radius - size * 0.28);
     ctx.stroke();
 
-    // Spark flame at fuse tip
-    const sparkX = cx + size * 0.12;
-    const sparkY = cy - radius - size * 0.28;
-    const sparkR = 2.5 + pulse * 2.5;
-
-    // Outer flame glow
-    const flameGrad = ctx.createRadialGradient(sparkX, sparkY, 0, sparkX, sparkY, sparkR * 2.5);
-    flameGrad.addColorStop(0, `rgba(255, 200, 50, ${(0.8 * pulse).toFixed(2)})`);
-    flameGrad.addColorStop(0.4, `rgba(255, 100, 0, ${(0.4 * pulse).toFixed(2)})`);
-    flameGrad.addColorStop(1, 'transparent');
-    ctx.fillStyle = flameGrad;
+    // Spark - simple orange dot
+    ctx.fillStyle = '#ffaa00';
     ctx.beginPath();
-    ctx.arc(sparkX, sparkY, sparkR * 2.5, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Inner spark core
-    ctx.fillStyle = `rgba(255, 255, 220, ${pulse.toFixed(2)})`;
-    ctx.beginPath();
-    ctx.arc(sparkX, sparkY, sparkR * 0.6, 0, Math.PI * 2);
+    ctx.arc(cx + size * 0.12, cy - radius - size * 0.28, 2, 0, Math.PI * 2);
     ctx.fill();
   }
 
@@ -1137,18 +1003,24 @@ class Game {
       }
     });
 
-    // Swipe gesture controls for mobile
-    this.setupSwipeControls();
+    // Touch gesture controls for mobile (real-time drag)
+    this.setupTouchControls();
   }
 
-  private setupSwipeControls() {
+  private setupTouchControls() {
     let touchStartX = 0;
     let touchStartY = 0;
     let touchStartTime = 0;
-    let isSwiping = false;
+    let isTouching = false;
+    let movedColumns = 0; // how many columns we've moved so far during this drag
+    let droppedRows = 0; // how many rows we've soft-dropped during this drag
+    let gestureDecided = false; // have we decided horizontal vs vertical?
+    let gestureDirection: 'horizontal' | 'vertical' | null = null;
+    let didAction = false; // did we perform any meaningful action?
 
-    const SWIPE_THRESHOLD = 30; // minimum px to count as a swipe
-    const TAP_THRESHOLD = 10; // below this is a tap, not a swipe
+    const COL_THRESHOLD = 28; // pixels per column of movement
+    const ROW_THRESHOLD = 35; // pixels per row of soft drop
+    const DECIDE_THRESHOLD = 12; // pixels before we decide gesture direction
 
     const gameScreen = document.getElementById('game-screen');
     if (!gameScreen) return;
@@ -1164,27 +1036,74 @@ class Game {
       touchStartX = touch.clientX;
       touchStartY = touch.clientY;
       touchStartTime = Date.now();
-      isSwiping = true;
+      isTouching = true;
+      movedColumns = 0;
+      droppedRows = 0;
+      gestureDecided = false;
+      gestureDirection = null;
+      didAction = false;
     }, { passive: true });
 
     gameScreen.addEventListener('touchmove', (e: TouchEvent) => {
-      if (!isSwiping || this.isPaused || this.gameOver) return;
+      if (!isTouching || this.isPaused || this.gameOver) return;
 
       const target = e.target as HTMLElement;
       if (target.closest('.controls') || target.closest('.top-stats-bar') || target.closest('.overlay.active')) {
         return;
       }
 
-      // Prevent page scroll during game swipes
+      // Prevent page scroll during game touches
       e.preventDefault();
+
+      const touch = e.touches[0];
+      const deltaX = touch.clientX - touchStartX;
+      const deltaY = touch.clientY - touchStartY;
+      const absDeltaX = Math.abs(deltaX);
+      const absDeltaY = Math.abs(deltaY);
+
+      // Decide gesture direction once we move enough
+      if (!gestureDecided && (absDeltaX > DECIDE_THRESHOLD || absDeltaY > DECIDE_THRESHOLD)) {
+        gestureDecided = true;
+        gestureDirection = absDeltaX >= absDeltaY ? 'horizontal' : 'vertical';
+      }
+
+      if (!gestureDecided) return;
+
+      if (gestureDirection === 'horizontal') {
+        // Real-time horizontal movement: move piece as finger drags
+        const targetColumns = Math.round(deltaX / COL_THRESHOLD);
+        const diff = targetColumns - movedColumns;
+
+        if (diff !== 0) {
+          const dir = diff > 0 ? 1 : -1;
+          const steps = Math.abs(diff);
+          for (let i = 0; i < steps; i++) {
+            this.move(dir);
+          }
+          movedColumns = targetColumns;
+          didAction = true;
+        }
+      } else if (gestureDirection === 'vertical' && deltaY > 0) {
+        // Real-time vertical (downward) movement: soft drop as finger drags down
+        const targetRows = Math.floor(deltaY / ROW_THRESHOLD);
+        const diff = targetRows - droppedRows;
+
+        if (diff > 0) {
+          for (let i = 0; i < diff; i++) {
+            this.drop();
+          }
+          droppedRows = targetRows;
+          didAction = true;
+        }
+      }
     }, { passive: false });
 
     gameScreen.addEventListener('touchend', (e: TouchEvent) => {
-      if (!isSwiping || this.isPaused || this.gameOver) return;
+      if (!isTouching || this.isPaused || this.gameOver) return;
 
       const target = e.target as HTMLElement;
       if (target.closest('.controls') || target.closest('.top-stats-bar') || target.closest('.overlay.active')) {
-        isSwiping = false;
+        isTouching = false;
         return;
       }
 
@@ -1195,51 +1114,27 @@ class Game {
       const absDeltaY = Math.abs(deltaY);
       const elapsed = Date.now() - touchStartTime;
 
-      isSwiping = false;
+      isTouching = false;
 
-      // Ignore very small movements (taps)
-      if (absDeltaX < TAP_THRESHOLD && absDeltaY < TAP_THRESHOLD) {
+      // If we already handled movement during drag, check for fast vertical swipe
+      if (gestureDirection === 'vertical' && deltaY > 0) {
+        // Fast long swipe down = hard drop
+        if (absDeltaY > 100 && elapsed < 250) {
+          this.hardDrop();
+          return;
+        }
+      }
+
+      // Swipe up = rotate (can only be detected on end since it's a quick gesture)
+      if (gestureDirection === 'vertical' && deltaY < 0 && absDeltaY > 30) {
+        this.rotate();
         return;
       }
 
-      // Determine primary direction
-      if (absDeltaX > absDeltaY) {
-        // Horizontal swipe
-        if (absDeltaX >= SWIPE_THRESHOLD) {
-          if (deltaX < 0) {
-            // Swipe left
-            const steps = Math.min(Math.floor(absDeltaX / 40), 4);
-            for (let i = 0; i < Math.max(1, steps); i++) {
-              this.move(-1);
-            }
-          } else {
-            // Swipe right
-            const steps = Math.min(Math.floor(absDeltaX / 40), 4);
-            for (let i = 0; i < Math.max(1, steps); i++) {
-              this.move(1);
-            }
-          }
-        }
-      } else {
-        // Vertical swipe
-        if (absDeltaY >= SWIPE_THRESHOLD) {
-          if (deltaY > 0) {
-            // Swipe down
-            if (absDeltaY > 120 && elapsed < 300) {
-              // Fast long swipe = hard drop
-              this.hardDrop();
-            } else {
-              // Short/slow swipe down = soft drop
-              const steps = Math.min(Math.floor(absDeltaY / 30), 6);
-              for (let i = 0; i < Math.max(1, steps); i++) {
-                this.drop();
-              }
-            }
-          } else {
-            // Swipe up = rotate
-            this.rotate();
-          }
-        }
+      // If nothing happened and it was a very small movement, treat as tap (no action)
+      if (!didAction && absDeltaX < 10 && absDeltaY < 10) {
+        // Tap on canvas area - could be used for rotate or ignored
+        return;
       }
     }, { passive: true });
   }
