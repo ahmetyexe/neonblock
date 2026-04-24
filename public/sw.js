@@ -1,4 +1,4 @@
-const CACHE_NAME = 'neon-tetris-v2';
+const CACHE_NAME = 'neon-tetris-v3';
 
 // Install: cache the shell
 self.addEventListener('install', (event) => {
@@ -6,12 +6,12 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll([
-        '/',
-        '/index.html',
-        '/manifest.json',
-        '/icon-192.png',
-        '/icon-512.png',
-        '/icon-maskable.png'
+        './',
+        './index.html',
+        './manifest.json',
+        './icon-192.png',
+        './icon-512.png',
+        './icon-maskable.png'
       ]);
     })
   );
@@ -48,7 +48,7 @@ self.addEventListener('fetch', (event) => {
           caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
           return response;
         })
-        .catch(() => caches.match('/index.html'))
+        .catch(() => caches.match('./index.html'))
     );
     return;
   }
